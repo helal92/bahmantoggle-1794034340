@@ -17,9 +17,9 @@
     return;
   }
 
-  // Only hydrate a few eager images for the first visible brand.
-  // Other brands keep data-src until their tab is opened (was loading ~128 thumbs).
-  var EAGER_PER_BRAND = 3;
+  // First brand: all real src (Swiper loop clones need real images).
+  // Other brands: placeholder until tab click.
+  var EAGER_FIRST_BRAND = true;
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -62,9 +62,9 @@
         .map(function (car, idx) {
           var img = fileUrl + "/thumb/" + encodeURIComponent(car.image) + "/600";
           var href = siteUrl + "/product/" + encodeURIComponent(car.id);
-          var eager = isFirst && idx < EAGER_PER_BRAND;
+          var eager = isFirst && EAGER_FIRST_BRAND;
           var imgAttrs = eager
-            ? 'src="' + esc(img) + '" loading="' + (idx === 0 ? "eager" : "lazy") + '"'
+            ? 'src="' + esc(img) + '" loading="' + (idx < 3 ? (idx === 0 ? "eager" : "lazy") : "lazy") + '"'
             : 'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-src="' +
               esc(img) +
               '" loading="lazy"';
@@ -105,16 +105,67 @@
     brandsEl.innerHTML = brandsHtml;
     carouselsEl.innerHTML = carouselsHtml;
     section.hidden = false;
+    // Force layout so Swiper measures a real width (was ~0 while [hidden]).
+    void section.offsetWidth;
 
     brandsEl.querySelectorAll("[tab_content_title]").forEach(function (tab) {
       tab.addEventListener("click", function () {
         var key = tab.getAttribute("tab_content_title");
         var wrap = carouselsEl.querySelector('[tab_content_item="' + key + '"]');
         hydrate(wrap);
+        requestAnimationFrame(function () {
+          repairSliders();
+        });
       });
     });
 
     return true;
+  }
+
+  function repairSliders() {
+    document.querySelectorAll(".ProductCategory_Slider").forEach(function (el) {
+      var s = el.swiperInstance;
+      if (!s) {
+        return;
+      }
+      try {
+        s.updateSize();
+        s.updateSlides();
+        s.updateProgress();
+        s.update();
+        var wrap = el.closest(".carousel-wrap");
+        if (wrap && wrap.classList.contains("active")) {
+          var cw = el.getBoundingClientRect().width;
+          var active = el.querySelector(".swiper-slide-active");
+          var aw = active ? active.getBoundingClientRect().width : 0;
+          if (cw > 0 && aw > cw * 1.5) {
+            if (typeof s.loopDestroy === "function") {
+              s.loopDestroy();
+            }
+            s.params.loop = false;
+            s.update();
+            s.slideTo(0, 0);
+          } else if (s.params.loop && s.slideToLoop) {
+            s.slideToLoop(0, 0);
+          } else {
+            s.slideTo(0, 0);
+          }
+        }
+      } catch (err) {
+        /* ignore */
+      }
+    });
+  }
+
+  function runInit() {
+    if (typeof window.initBahmanProductSlider === "function") {
+      window.initBahmanProductSlider();
+    }
+    repairSliders();
+    requestAnimationFrame(function () {
+      repairSliders();
+      setTimeout(repairSliders, 80);
+    });
   }
 
   function bootSlider() {
@@ -132,16 +183,8 @@
       src = preload.href.replace(/(\?.*)?$/, "") + "?home=" + Date.now();
     }
     return import(src)
-      .then(function () {
-        if (typeof window.initBahmanProductSlider === "function") {
-          window.initBahmanProductSlider();
-        }
-      })
-      .catch(function () {
-        if (typeof window.initBahmanProductSlider === "function") {
-          window.initBahmanProductSlider();
-        }
-      });
+      .then(runInit)
+      .catch(runInit);
   }
 
   function load() {
@@ -157,15 +200,20 @@
         if (!build(cats)) {
           return;
         }
-        return bootSlider();
+        // Wait a frame after unhiding so Swiper gets non-zero container width.
+        return new Promise(function (resolve) {
+          requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+              resolve(bootSlider());
+            });
+          });
+        });
       })
       .catch(function () {
         /* keep homepage usable without slider */
       });
   }
 
-  // Section starts with [hidden], so IntersectionObserver never fires (0×0 box).
-  // Load shortly after first paint / idle instead.
   function scheduleLoad() {
     if (typeof window.requestIdleCallback === "function") {
       window.requestIdleCallback(
