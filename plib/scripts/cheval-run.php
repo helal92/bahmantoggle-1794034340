@@ -1,25 +1,23 @@
 <?php
-echo "before load ".trim(@file_get_contents('/proc/loadavg'))." synrecv=".trim(shell_exec("ss -tn state syn-recv | wc -l"))."\n";
+echo "nginx_control help:\n".shell_exec('/usr/local/psa/admin/bin/nginx_control --help 2>&1 | head -20');
+echo "httpdmng help:\n".shell_exec('/usr/local/psa/admin/bin/httpdmng --help 2>&1 | head -30');
 
-// Find apache/httpd control tools
-echo shell_exec("ls /usr/local/psa/admin/bin/*http* /usr/local/psa/admin/sbin/*http* 2>/dev/null");
-echo shell_exec("ls /usr/local/psa/admin/bin/*nginx* /usr/local/psa/admin/sbin/*nginx* 2>/dev/null");
+echo "\nTRY nginx reload\n";
+echo shell_exec('/usr/local/psa/admin/bin/nginx_control reload 2>&1 | head -20');
+echo "TRY nginx restart\n";
+echo shell_exec('/usr/local/psa/admin/bin/nginx_control restart 2>&1 | head -20');
+echo "TRY apache via httpdmng\n";
+echo shell_exec('/usr/local/psa/admin/bin/httpdmng --restart 2>&1 | head -20');
+echo shell_exec('plesk bin service --restart apache 2>&1 | head -10');
+echo shell_exec('plesk bin service --list 2>&1 | head -30');
 
-// Try graceful restart via plesk
-foreach ([
-  '/usr/local/psa/admin/sbin/httpd-control restart',
-  '/usr/local/psa/admin/bin/httpd_control restart',
-  '/usr/local/psa/admin/sbin/httpd_control restart',
-  'plesk bin webserver --restart',
-  'plesk repair web -y -domains-only -n',
-] as $c) {
-  echo "TRY $c\n";
-  echo shell_exec("$c 2>&1 | head -15");
-}
+echo "\nSYN sources top:\n";
+echo shell_exec("ss -tn state syn-recv | awk '{print \$4}' | sed 's/\\[::ffff://;s/\\]//' | cut -d: -f1 | sort | uniq -c | sort -rn | head -20");
 
-sleep(2);
-echo "after load ".trim(@file_get_contents('/proc/loadavg'))." synrecv=".trim(shell_exec("ss -tn state syn-recv | wc -l"))."\n";
-echo "apache count ".trim(shell_exec("pgrep -c apache2"))." zombies ".trim(shell_exec("ps -eo stat,args | grep apache2 | grep -c 'Z\\|<defunct>'"))."\n";
+echo "\nestablished peers top:\n";
+echo shell_exec("ss -tn state established '( dport = :443 or sport = :443 )' | awk 'NR>1{print \$4}' | sed 's/\\[::ffff://;s/\\]//' | cut -d: -f1 | sort | uniq -c | sort -rn | head -15");
+
+sleep(1);
+echo "synrecv now=".trim(shell_exec("ss -tn state syn-recv | wc -l"))." load=".trim(@file_get_contents('/proc/loadavg'))."\n";
 echo shell_exec("curl -sk --max-time 8 -o /dev/null -w 'v %{http_code} %{time_total}\\n' -H 'Host: sitefile.bahman.ir' -H 'Range: bytes=0-1023' 'https://172.20.14.76/v/a9b88900-aead-11f1-ad46-005056b972d8.mp4'");
-echo shell_exec("curl -sk --max-time 8 -o /dev/null -w 'home %{http_code} %{time_total}\\n' -H 'Host: bahman.ir' 'https://172.20.14.76/'");
 echo "DONE\n";
