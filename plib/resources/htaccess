@@ -56,8 +56,9 @@ Options -Indexes
     RewriteRule ^video/([0-9]+)/?$ index.php?include=show_video&video_id=$1 [L,QSA]
     RewriteRule ^video/([0-9]+)/([^/]+)/?$ index.php?include=show_video&video_id=$1&slug=$2 [L,QSA]
 
-    # Lazy product mega-menu fragment (header)
+    # Lazy product mega-menu fragment (header) + JSON for homepage slider
     RewriteRule ^product-menu/?$ index.php?include=product_menu [L,QSA]
+    RewriteRule ^product-menu\.json$ index.php?include=product_menu_json [L,QSA]
 
     # Bahman landings
     RewriteRule ^sales/?$ index.php?include=sales [L,QSA]

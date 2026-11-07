@@ -2253,6 +2253,49 @@ if (isset($_GET['include'])) {
             $bahmanSkipSharedNavQueries = true;
             $smarty->assign('product_category', bahman_cms_product_category_tree(null));
             break;
+        case 'product_menu_json':
+            // Slim JSON for homepage slider + other clients (cached via tree helper).
+            $bahmanSkipSharedNavQueries = true;
+            header('Content-Type: application/json; charset=UTF-8');
+            header('Cache-Control: public, max-age=300');
+            $tree = bahman_cms_product_category_tree(null);
+            $categories = [];
+            foreach ($tree as $cat) {
+                if (!is_array($cat)) {
+                    continue;
+                }
+                $title = trim((string) ($cat['values']['title'] ?? ''));
+                $productsIn = $cat['child_table']['product_category'] ?? null;
+                if ($title === '' || !is_array($productsIn) || $productsIn === []) {
+                    continue;
+                }
+                $products = [];
+                foreach ($productsIn as $car) {
+                    if (!is_array($car)) {
+                        continue;
+                    }
+                    $image = trim((string) ($car['values']['image'] ?? ''));
+                    $carTitle = trim((string) ($car['values']['title'] ?? ''));
+                    if ($image === '' || $carTitle === '') {
+                        continue;
+                    }
+                    $products[] = [
+                        'id' => $car['id'] ?? '',
+                        'title' => $carTitle,
+                        'image' => $image,
+                    ];
+                }
+                if ($products === []) {
+                    continue;
+                }
+                $categories[] = [
+                    'id' => $cat['id'] ?? '',
+                    'title' => $title,
+                    'products' => $products,
+                ];
+            }
+            echo json_encode(['categories' => $categories], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
         case 'sales':
             $template = 'sales';
             $page_title = 'فروش | گروه بهمن';
@@ -3762,7 +3805,8 @@ if (isset($_GET['include'])) {
 
     // Heavy product tree: only for homepage / product listing (header mega-menu loads via /product-menu).
     if (empty($bahmanSkipSharedNavQueries)) {
-        $needsProductTree = isset($template) && ($template === 'index' || $template === 'product');
+        // index: product slider loads client-side from /product-menu (avoids 100+ thumbs on every homepage hit)
+        $needsProductTree = isset($template) && $template === 'product';
         $filter_brand_id = null;
         if ($needsProductTree && isset($_GET['include']) && $_GET['include'] === 'product') {
             if (isset($_GET['brand_id']) && is_numeric($_GET['brand_id'])) {

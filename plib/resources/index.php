@@ -25,15 +25,20 @@ if (isset($_GET['include']) && $_GET['include'] === 'product_menu') {
 	}
 }
 
-if ($bahmanFastMode && isset($_GET['include']) && $_GET['include'] === 'sales') {
-	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_sales_page_v2.html';
+// Homepage + sales HTML cache (FAST_MODE): skip session/CMS on HIT.
+if (isset($_GET['include']) && ($_GET['include'] === 'sales' || $_GET['include'] === 'index')) {
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_' . ($_GET['include'] === 'index' ? 'home' : 'sales') . '_page_v3.html';
 	$bahmanPageCacheTtl = 90;
-	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
+	$allowPageCache = $bahmanFastMode || $_GET['include'] === 'index';
+	if ($allowPageCache && is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
 		header('Content-Type: text/html; charset=UTF-8');
 		header('X-Bahman-Cache: HIT');
 		header('Cache-Control: public, max-age=60');
 		readfile($bahmanPageCacheFile);
 		exit;
+	}
+	if (!$allowPageCache) {
+		$bahmanPageCacheFile = null;
 	}
 }
 
@@ -194,7 +199,7 @@ $smarty->registerPlugin(
     }
 );
 
-if ($bahmanPageCacheFile && ($template === 'sales' || $template === 'product_menu_fragment')) {
+if ($bahmanPageCacheFile && ($template === 'sales' || $template === 'product_menu_fragment' || $template === 'index')) {
 	ob_start();
 	$smarty->display('templates/' . TEMPLATE_NAME . '/' . $template . '.tpl');
 	$html = ob_get_clean();

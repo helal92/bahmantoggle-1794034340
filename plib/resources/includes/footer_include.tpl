@@ -9,6 +9,7 @@
 <link rel="modulepreload" crossorigin href="{$admin_setting.template_url}/assets/footer-bahman.js?v={$template_version}">
 <link rel="modulepreload" crossorigin href="{$admin_setting.template_url}/assets/navigation.js?v={$template_version}">
 {if isset($smarty.get.include) and $smarty.get.include eq 'index'}
+    <script defer src="{$admin_setting.template_url}/assets/home-product-slider.js?v={$template_version}"></script>
     <script defer src="{$admin_setting.template_url}/assets/hero-video-control.js?v={$template_version}"></script>
     <script defer src="{$admin_setting.template_url}/assets/hero-media-fix.js?v={$template_version}"></script>
     <script type="module" crossorigin src="{$admin_setting.template_url}/assets/index.js?v={$template_version}"></script>

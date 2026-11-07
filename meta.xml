@@ -2,8 +2,8 @@
 <module>
   <id>bahmantoggle</id>
   <name>bahmantoggle</name>
-  <description>x</description>
-  <version>1.4.6</version>
+  <description>Toggle bahman FAST_MODE and diagnostics</description>
+  <version>1.5.0</version>
   <release>1</release>
   <vendor>local</vendor>
 </module>
