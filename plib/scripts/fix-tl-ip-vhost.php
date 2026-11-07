@@ -1,0 +1,25 @@
+<?php
+$fm='/opt/psa/admin/bin/filemng';
+function root($cmd){global $fm; echo trim((string)shell_exec($fm.' root exec / bash -c '.escapeshellarg($cmd).' --allow-root 2>&1'))."\n\n";}
+file_put_contents('/tmp/tl.bahman.ir.conf', base64_decode('PFZpcnR1YWxIb3N0IDE3Mi4yMC4xNC43Njo4MD4KICAgIFNlcnZlck5hbWUgdGwuYmFobWFuLmlyCiAgICBIZWFkZXIgYWx3YXlzIHNldCBYLVRMLUdhdGUgIjEiCiAgICBSZXdyaXRlRW5naW5lIE9uCiAgICBSZXdyaXRlQ29uZCAle1JFTU9URV9BRERSfSBeKDc4XC4xNTdcLjQ4XC4xODh8NzhcLjE1N1wuNDhcLjE3OHwxMDlcLjEyNVwuMTc3XC42MHw0NlwuMjA5XC4yMDJcLjEyNnw5NVwuMzhcLjEyNVwuMjQyKSQKICAgIFJld3JpdGVSdWxlIF4gLSBbRT1UTF9PSzoxXQogICAgUmV3cml0ZUNvbmQgJXtIVFRQOlgtRm9yd2FyZGVkLUZvcn0gKF58LFtbOnNwYWNlOl1dKikoNzhcLjE1N1wuNDhcLjE4OHw3OFwuMTU3XC40OFwuMTc4fDEwOVwuMTI1XC4xNzdcLjYwfDQ2XC4yMDlcLjIwMlwuMTI2fDk1XC4zOFwuMTI1XC4yNDIpKCx8JCkKICAgIFJld3JpdGVSdWxlIF4gLSBbRT1UTF9PSzoxXQogICAgUmV3cml0ZUNvbmQgJXtFTlY6VExfT0t9ICFeMSQKICAgIFJld3JpdGVSdWxlIF4gLSBbRixMXQogICAgUmV3cml0ZUNvbmQgJXtIVFRQOlVwZ3JhZGV9ID13ZWJzb2NrZXQgW05DXQogICAgUmV3cml0ZVJ1bGUgXi8oLiopIHdzOi8vMTI3LjAuMC4xOjc2ODEvJDEgW1AsTF0KICAgIFJld3JpdGVSdWxlIF4vKC4qKSBodHRwOi8vMTI3LjAuMC4xOjc2ODEvJDEgW1AsTF0KICAgIFByb3h5UGFzc1JldmVyc2UgLyBodHRwOi8vMTI3LjAuMC4xOjc2ODEvCiAgICBFcnJvckxvZyAke0FQQUNIRV9MT0dfRElSfS90bC5iYWhtYW4uaXItZXJyb3IubG9nCiAgICBDdXN0b21Mb2cgJHtBUEFDSEVfTE9HX0RJUn0vdGwuYmFobWFuLmlyLWFjY2Vzcy5sb2cgY29tYmluZWQKPC9WaXJ0dWFsSG9zdD4K'));
+file_put_contents('/tmp/tl_acl_test.py', base64_decode('CmltcG9ydCB1cmxsaWIucmVxdWVzdApmcm9tIHVybGxpYi5lcnJvciBpbXBvcnQgSFRUUEVycm9yCgpkZWYgcHJvYmUodXJsLCBoZWFkZXJzKToKICAgIHJlcSA9IHVybGxpYi5yZXF1ZXN0LlJlcXVlc3QodXJsLCBoZWFkZXJzPWhlYWRlcnMpCiAgICB0cnk6CiAgICAgICAgd2l0aCB1cmxsaWIucmVxdWVzdC51cmxvcGVuKHJlcSwgdGltZW91dD01KSBhcyByOgogICAgICAgICAgICByZXR1cm4gci5zdGF0dXMsIHIuaGVhZGVycy5nZXQoIlgtVEwtR2F0ZSIpLCAoci5yZWFkKDgwKVs6NjBdKQogICAgZXhjZXB0IEhUVFBFcnJvciBhcyBlOgogICAgICAgIGJvZHkgPSBlLnJlYWQoODApIGlmIGhhc2F0dHIoZSwncmVhZCcpIGVsc2UgYicnCiAgICAgICAgcmV0dXJuIGUuY29kZSwgZS5oZWFkZXJzLmdldCgiWC1UTC1HYXRlIikgaWYgZS5oZWFkZXJzIGVsc2UgTm9uZSwgYm9keVs6NDBdCgpoMD17Ikhvc3QiOiJ0bC5iYWhtYW4uaXIifQpoMT17Ikhvc3QiOiJ0bC5iYWhtYW4uaXIiLCJYLUZvcndhcmRlZC1Gb3IiOiI3OC4xNTcuNDguMTg4In0KaDI9eyJIb3N0IjoidGwuYmFobWFuLmlyIiwiWC1Gb3J3YXJkZWQtRm9yIjoiMS4yLjMuNCJ9CmZvciBuYW1lLGggaW4gWygiREVOWSIsaDApLCgiQUxMT1ciLGgxKSwoIkJBRCIsaDIpXToKICAgIHByaW50KG5hbWUsIHByb2JlKCJodHRwOi8vMTcyLjIwLjE0Ljc2LyIsIGgpKQo='));
+
+root('set -e
+# create subdomain if missing
+if ! plesk bin subdomain --list -domain bahman.ir 2>/dev/null | grep -qx tl; then
+  mkdir -p /var/www/vhosts/bahman.ir/tl_httpdocs
+  plesk bin subdomain --create tl -domain bahman.ir -www-root tl_httpdocs 2>&1 || true
+fi
+plesk bin subdomain --list -domain bahman.ir 2>&1 | head
+# put vhost on correct IP socket (Plesk style)
+cp /tmp/tl.bahman.ir.conf /etc/apache2/sites-available/tl.bahman.ir.conf
+# also copy into plesk conf.d so it joins 172.20.14.76:80 group
+cp /tmp/tl.bahman.ir.conf /etc/apache2/plesk.conf.d/vhosts/tl.bahman.ir.conf
+a2ensite tl.bahman.ir.conf >/dev/null 2>&1 || true
+apache2ctl configtest
+systemctl reload apache2
+apache2ctl -S 2>&1 | grep -E "tl.bahman|172.20.14.76:80" | head -20
+');
+
+root('python3 /tmp/tl_acl_test.py');
+echo "DONE\n";
