@@ -31,12 +31,18 @@
                         <div class="item" id="product-category{$item.id}">
                             <h2 class="title">{$item.values.title}</h2>
                             <div class="box_cars">
+                                {$car_i = 0}
                                 {foreach $item.child_table.product_category as $car}
+                                    {$car_i = $car_i + 1}
                                     <div class="car">
                                         <div class="top">
                                             <a href="{$admin_setting.site_url}/product/{$car.id}" class="link">
                                                 <div class="box_image">
-                                                    <img src="{$admin_setting.file_url}/thumb/{$car.values.image}/300" class="img" alt="{$car.values.title}" loading="lazy" decoding="async" width="300" height="162">
+                                                    {if $car_i <= 6}
+                                                        <img src="{$admin_setting.file_url}/thumb/{$car.values.image}/300" class="img" alt="{$car.values.title}" loading="lazy" decoding="async" width="300" height="162">
+                                                    {else}
+                                                        <img data-src="{$admin_setting.file_url}/thumb/{$car.values.image}/300" class="img" alt="{$car.values.title}" loading="lazy" decoding="async" width="300" height="162">
+                                                    {/if}
                                                 </div>
                                                 <h3 class="model_name">{$car.values.title}</h3>
                                             </a>

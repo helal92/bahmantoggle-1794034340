@@ -1,0 +1,105 @@
+/* Compact product cards — mega menu + product list page */
+
+.header .card .submenu > .card .cars_list .card3 .item .title,
+.header .card .list_products > .card .cars_list .card3 .item .title,
+.product-list-page .cars_list .card3 .item .title {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  margin-bottom: 16px !important;
+}
+
+.header .card .submenu > .card .cars_list .card3 .item .box_cars,
+.header .card .list_products > .card .cars_list .card3 .item .box_cars,
+.product-list-page .cars_list .card3 .item .box_cars {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  column-gap: 16px;
+  row-gap: 24px !important;
+  justify-items: center;
+}
+
+.header .card .submenu > .card .cars_list .card3 .item .box_cars .car,
+.header .card .list_products > .card .cars_list .card3 .item .box_cars .car,
+.product-list-page .cars_list .card3 .item .box_cars .car {
+  width: 100%;
+  max-width: 180px;
+  gap: 8px !important;
+}
+
+.header .card .submenu > .card .cars_list .card3 .item .box_cars .car .top > .link .box_image,
+.header .card .list_products > .card .cars_list .card3 .item .box_cars .car .top > .link .box_image,
+.product-list-page .cars_list .card3 .item .box_cars .car .top > .link .box_image {
+  width: 100% !important;
+  max-width: 160px !important;
+  height: 100px !important;
+}
+
+.header .card .submenu > .card .cars_list .card3 .item .box_cars .car .top > .link .box_image .img,
+.header .card .list_products > .card .cars_list .card3 .item .box_cars .car .top > .link .box_image .img,
+.product-list-page .cars_list .card3 .item .box_cars .car .top > .link .box_image .img {
+  max-height: 88px !important;
+}
+
+.header .card .submenu > .card .cars_list .card3 .item .box_cars .car .top > .link .model_name,
+.header .card .list_products > .card .cars_list .card3 .item .box_cars .car .top > .link .model_name,
+.product-list-page .cars_list .card3 .item .box_cars .car .top > .link .model_name {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.4;
+}
+
+.product-list-page .cars_list .card3 {
+  gap: 56px;
+}
+
+@media screen and (max-width: 1440px) {
+  .header .card .submenu > .card .cars_list .card3 .item .box_cars,
+  .header .card .list_products > .card .cars_list .card3 .item .box_cars,
+  .product-list-page .cars_list .card3 .item .box_cars {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  .header .card .submenu > .card .cars_list .card3 .item .box_cars,
+  .header .card .list_products > .card .cars_list .card3 .item .box_cars,
+  .product-list-page .cars_list .card3 .item .box_cars {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+
+  .header .card .submenu > .card .cars_list .card3 .item .title,
+  .header .card .list_products > .card .cars_list .card3 .item .title,
+  .product-list-page .cars_list .card3 .item .title {
+    font-size: 18px !important;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .header .card .submenu > .card .cars_list .card3 .item .box_cars,
+  .header .card .list_products > .card .cars_list .card3 .item .box_cars,
+  .product-list-page .cars_list .card3 .item .box_cars {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  .header .card .submenu > .card .cars_list .card3 .item .box_cars,
+  .header .card .list_products > .card .cars_list .card3 .item .box_cars,
+  .product-list-page .cars_list .card3 .item .box_cars {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .header .card .submenu > .card .cars_list .card3 .item .box_cars .car .top > .link .model_name,
+  .header .card .list_products > .card .cars_list .card3 .item .box_cars .car .top > .link .model_name,
+  .product-list-page .cars_list .card3 .item .box_cars .car .top > .link .model_name {
+    font-size: 12px !important;
+  }
+}
+
+
+.box_cars>.car.is-row-collapsed{display:none!important}
+.product-show-more{display:inline-flex;align-items:center;justify-content:center;margin:28px auto 0;padding:12px 28px;border:1px solid #000;background:#000;color:#fff;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;transition:background .25s ease,color .25s ease}
+.product-show-more:hover{background:#fff;color:#000}
+.header .card .submenu .cars_list .card3 .item .product-show-more,.product-list-page .cars_list .card3 .item .product-show-more{display:flex}
+.product-show-more[hidden]{display:none!important}
+

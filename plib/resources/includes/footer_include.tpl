@@ -1,4 +1,5 @@
 {strip}
+<script defer src="{$admin_setting.template_url}/assets/product-rows.js?v={$template_version}"></script>
 <script defer src="{$admin_setting.template_url}/assets/product-menu-lazy.js?v={$template_version}"></script>
 <script defer src="{$admin_setting.template_url}/assets/header-search.js?v={$template_version}"></script>
 {if isset($has_active_sale) and $has_active_sale}

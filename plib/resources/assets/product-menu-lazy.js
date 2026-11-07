@@ -63,6 +63,9 @@
       .then(function (html) {
         root.innerHTML = html;
         bindMenuUi();
+        if (window.BahmanProductRows && typeof window.BahmanProductRows.init === "function") {
+          window.BahmanProductRows.init(root);
+        }
         loaded = true;
       })
       .catch(function () {
