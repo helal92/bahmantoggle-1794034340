@@ -78,7 +78,7 @@
                         </div>
                     </div>
 
-                    <button type="button" class="hero-video-toggle" aria-label="توقف اسلایدر" aria-pressed="true">
+                    <button type="button" class="hero-video-toggle" aria-label="توقف اسلایدر" aria-pressed="true" hidden>
                         <svg class="hero-video-toggle__progress" viewBox="0 0 44 44" aria-hidden="true">
                             <circle class="hero-video-toggle__progress-track" cx="22" cy="22" r="19.5"></circle>
                             <circle class="hero-video-toggle__progress-bar" cx="22" cy="22" r="19.5"></circle>
