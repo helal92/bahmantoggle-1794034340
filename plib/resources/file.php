@@ -653,8 +653,10 @@ if (isset($_GET["id"])) {
 								}
 							}
 							if ($needLink) {
-								@symlink($realPath, $linkPath);
-							}
+									if (!@link($realPath, $linkPath)) {
+										@symlink($realPath, $linkPath);
+									}
+								}
 							if (is_link($linkPath) || is_file($linkPath)) {
 								bahman_fast_public_cache_headers(60);
 								header('Location: /v/' . rawurlencode($linkName), true, 302);
