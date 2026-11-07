@@ -1,25 +1,17 @@
 <?php
-echo "=== wrapper ===\n";
-foreach (['/usr/local/psa/admin/sbin/wrapper','/opt/psa/admin/sbin/wrapper','/usr/local/psa/admin/sbin/mod_wrapper'] as $w) {
-  echo "ls $w: ".trim((string)shell_exec('ls -la '.escapeshellarg($w).' 2>&1'))."\n";
+echo "=== search only ===\n";
+echo trim((string)shell_exec('grep -R "f2bmng" /usr/local/psa/admin/plib --include="*.php" -l 2>/dev/null | head -30'))."\n";
+echo "---\n";
+echo trim((string)shell_exec('grep -R "class.*Fail2Ban\|Fail2ban\|fail2Ban" /usr/local/psa/admin/plib --include="*.php" -l 2>/dev/null | head -30'))."\n";
+echo "---\n";
+$files=trim((string)shell_exec('grep -R "f2bmng" /usr/local/psa/admin/plib --include="*.php" -l 2>/dev/null | head -5'));
+foreach (explode("\n", $files) as $f) {
+  if ($f==='') continue;
+  echo "FILE $f\n";
+  echo trim((string)shell_exec('grep -n "f2bmng\|setActive\|isActive\|enable\|restart\|jail" '.escapeshellarg($f).' 2>/dev/null | head -40'))."\n====\n";
 }
-$w='/usr/local/psa/admin/sbin/wrapper';
-# try invocations
-$tries=[
-  "$w",
-  "$w --help",
-  "$w help",
-  "$w f2bmng",
-  "$w f2bmng --help",
-  "$w -- f2bmng --help",
-  "$w /usr/local/psa/admin/sbin/f2bmng --help",
-];
-foreach ($tries as $cmd) {
-  $out=trim((string)@shell_exec('timeout 6 '.$cmd.' 2>&1'));
-  echo "TRY: $cmd\n$out\n----\n";
-}
-
-# How does plesk invoke f2bmng? search php code
-echo "refs:\n".trim((string)shell_exec('grep -R "f2bmng" /usr/local/psa/admin/plib --include="*.php" -l 2>/dev/null | head -20'))."\n";
-echo "refs2:\n".trim((string)shell_exec('grep -R "Fail2Ban\\|fail2ban\\|f2bmng" /usr/local/psa/admin/plib/modules --include="*.php" -l 2>/dev/null | head -20'))."\n";
-echo "panel ui:\n".trim((string)shell_exec('ls /usr/local/psa/admin/htdocs/fail2ban* 2>/dev/null; ls /usr/local/psa/admin/htdocs/*/fail2ban* 2>/dev/null | head'))."\n";
+# Also look at REST API routes
+echo "api:\n".trim((string)shell_exec('grep -R "fail2ban" /usr/local/psa/admin/plib/pm/Api --include="*.php" -l 2>/dev/null | head -20'))."\n";
+echo "swagger snippet:\n".trim((string)shell_exec('grep -R "fail2ban" /usr/local/psa/admin/htdocs/api 2>/dev/null | head -20'))."\n";
+# event handler create as root
+echo "list-users:\n".trim((string)shell_exec('plesk bin event_handler --list-users 2>&1'))."\n";
