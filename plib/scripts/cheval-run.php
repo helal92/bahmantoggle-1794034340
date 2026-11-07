@@ -1,28 +1,20 @@
 <?php
-echo shell_exec('sed -n "350,509p" /tmp/bahman_probe.txt');
-echo "\n==== index.tpl video block ====\n";
-$root='/var/www/vhosts/bahman.ir/httpdocs';
-$idx=file_get_contents("$root/templates/bahman/index.tpl");
-// find video tags with context
-if (preg_match_all('/<video[\s\S]*?<\/video>/i',$idx,$m)) {
-  foreach ($m[0] as $i=>$v) echo "VIDEO $i:\n$v\n\n";
-}
-echo "\n==== how media url built? ====\n";
-foreach (explode("\n",$idx) as $i=>$line) {
-  if (preg_match('/file_url|sitefile|get_file|image|attachment|links/i',$line) && preg_match('/video|hero|slider|section|image|file/i',$line)) {
-    echo ($i+1).': '.trim($line)."\n";
-  }
-}
-// search config for file URL helper
-echo shell_exec("grep -Rn 'hero-media\\|data-src\\|file_url\\|sitefile' $root/templates/bahman/index.tpl $root/httpdocs/templates/bahman/config.php $root/templates/bahman/config.php 2>/dev/null | head -40");
-echo shell_exec("ls $root/templates/bahman/config.php; wc -l $root/templates/bahman/index.tpl");
-// show lines around first video in index.tpl
-$lines=explode("\n",$idx);
-for ($i=0;$i<count($lines);$i++) {
-  if (stripos($lines[$i],'<video')!==false) {
-    $start=max(0,$i-25); $end=min(count($lines)-1,$i+30);
-    echo "\n--- context lines ".($start+1)."-".($end+1)." ---\n";
-    for ($j=$start;$j<=$end;$j++) echo ($j+1).': '.$lines[$j]."\n";
-    break;
-  }
-}
+// nginx / apache routing for sitefile
+echo "=== apache vhost sitefile ===\n";
+echo shell_exec("grep -nE 'Rewrite|Proxy|Alias|DocumentRoot|php|file_manager|Location' /var/www/vhosts/system/sitefile.bahman.ir/conf/httpd.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_ssl.conf 2>/dev/null | head -80");
+echo "\n=== nginx files exist? ===\n";
+echo shell_exec("ls -la /var/www/vhosts/system/sitefile.bahman.ir/conf/");
+echo "\n=== additional nginx directives ===\n";
+echo shell_exec("cat /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_nginx.conf 2>/dev/null; ls /var/www/vhosts/system/sitefile.bahman.ir/conf/*nginx* 2>/dev/null");
+echo shell_exec("plesk bin site --info sitefile.bahman.ir 2>/dev/null | head -40");
+// where are media files stored?
+echo "\n=== resolve BD460 via meta cache ===\n";
+$fm='/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager';
+echo shell_exec("ls $fm/cache/meta_* 2>/dev/null | wc -l");
+$id='61491e0c-bfc8-11f1-9600-005056b972d8';
+echo shell_exec("grep -l '$id' $fm/cache/meta_*.json 2>/dev/null | head -3 | while read f; do echo FILE \$f; cat \$f; echo; done");
+echo shell_exec("find /var/www/vhosts/siteapi.bahman.ir -name 'BD460.mp4' 2>/dev/null");
+// X-Sendfile module?
+echo "\n=== apache modules ===\n";
+echo shell_exec("httpd -M 2>/dev/null | grep -iE 'sendfile|xsend|headers|proxy'; apachectl -M 2>/dev/null | grep -iE 'sendfile|xsend'");
+echo shell_exec("nginx -V 2>&1 | tr ' ' '\\n' | grep -i send");
