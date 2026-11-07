@@ -46,6 +46,23 @@ RewriteCond %{REQUEST_URI} !^/v/ [NC]
 RewriteCond %{DOCUMENT_ROOT}/v/$1.webm -f
 RewriteRule ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:\.webm)?$ /v/$1.webm [L]
 
+# Static thumb offload: /t/{uuid}_{size}.ext served without PHP (survives FPM crashes).
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/t/$1_$2.png -f
+RewriteRule ^thumb/([^/]+)/([^/]+)$ /t/$1_$2.png [L]
+
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/t/$1_$2.jpg -f
+RewriteRule ^thumb/([^/]+)/([^/]+)$ /t/$1_$2.jpg [L]
+
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/t/$1_$2.gif -f
+RewriteRule ^thumb/([^/]+)/([^/]+)$ /t/$1_$2.gif [L]
+
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/t/$1_$2.webp -f
+RewriteRule ^thumb/([^/]+)/([^/]+)$ /t/$1_$2.webp [L]
+
 RewriteCond %{REQUEST_URI} !^/assets/ [NC]
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f

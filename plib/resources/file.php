@@ -13,6 +13,36 @@ namespace PHPMaker2020\adoura_base_api;
 define('BAHMAN_FAST_MODE', is_file(__DIR__ . '/.FAST_MODE'));
 
 /**
+ * Publish a predictable static thumb so Apache can serve /thumb/UUID/SIZE without PHP.
+ */
+function bahman_publish_static_thumb(string $uuid, string $size, string $cacheFile, string $ext): void
+{
+	if ($uuid === '' || $size === '' || !is_file($cacheFile) || filesize($cacheFile) < 1) {
+		return;
+	}
+	$dir = __DIR__ . '/t';
+	if (!is_dir($dir)) {
+		@mkdir($dir, 0775, true);
+	}
+	$ext = strtolower($ext);
+	if ($ext === 'jpeg') {
+		$ext = 'jpg';
+	}
+	if (!preg_match('/^(png|jpg|gif|webp)$/', $ext)) {
+		$ext = 'jpg';
+	}
+	$dest = $dir . '/' . $uuid . '_' . $size . '.' . $ext;
+	if (is_file($dest) && @filesize($dest) === @filesize($cacheFile) && @filemtime($dest) >= @filemtime($cacheFile)) {
+		return;
+	}
+	@unlink($dest);
+	if (!@link($cacheFile, $dest)) {
+		@copy($cacheFile, $dest);
+	}
+}
+
+
+/**
  * Hot path: serve an already-generated thumb from disk cache without autoload/DB/session.
  * Cuts PHP work dramatically under concurrent image load.
  */
@@ -25,12 +55,26 @@ if (
 	$uuid = preg_replace('/[^a-fA-F0-9\-]/', '', (string) $_GET['id']);
 	$sizeRaw = (string) $_GET['size'];
 	if ($uuid !== '' && $sizeRaw !== '' && preg_match('/^\d{2,4}$/', $sizeRaw)) {
+		// Prefer published static thumb (also served by Apache rewrite when present).
+		foreach (['png', 'jpg', 'gif', 'webp'] as $_ext) {
+			$_static = __DIR__ . '/t/' . $uuid . '_' . $sizeRaw . '.' . $_ext;
+			if (is_file($_static) && filesize($_static) > 0) {
+				$_mime = ($_ext === 'jpg') ? 'jpeg' : $_ext;
+				header('Content-Type: image/' . $_mime);
+				header('Content-Length: ' . filesize($_static));
+				header('Cache-Control: public, max-age=604800, immutable');
+				header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 604800) . ' GMT');
+				header('Pragma: public');
+				@header_remove('Set-Cookie');
+				readfile($_static);
+				exit;
+			}
+		}
 		$metaPath = __DIR__ . '/cache/meta_' . md5('fr_' . $uuid) . '.json';
 		$raw = is_file($metaPath) ? @file_get_contents($metaPath) : false;
 		$data = ($raw !== false && $raw !== '') ? json_decode($raw, true) : null;
-		$row = (is_array($data) && (int) ($data['exp'] ?? 0) >= time() && is_array($data['val'] ?? null))
-			? $data['val']
-			: null;
+		// Accept stale meta for thumb hotpath (row rarely changes; avoids autoload under load).
+		$row = (is_array($data) && is_array($data['val'] ?? null)) ? $data['val'] : null;
 		if (is_array($row) && !empty($row['url']) && !empty($row['file_name'])) {
 			$filePath = $row['url'] . '/' . $row['file_name'];
 			if (is_file($filePath)) {
@@ -48,9 +92,11 @@ if (
 				$fileTemp = __DIR__ . '/cache/' . $fileHash . '.img.txt';
 				if (is_file($fileTemp) && filesize($fileTemp) > 0) {
 					$ext = strtolower(pathinfo($row['file_name'], PATHINFO_EXTENSION));
+					$pubExt = ($ext === 'jpeg') ? 'jpg' : $ext;
 					if ($ext === 'jpg') {
 						$ext = 'jpeg';
 					}
+					bahman_publish_static_thumb($uuid, $sizeRaw, $fileTemp, $pubExt);
 					$fileDate = gmdate('D, d M Y H:i:s T', (int) $fileTime);
 					$fileName = basename($row['file_name']);
 					if (
@@ -167,7 +213,7 @@ function bahman_fast_file_row(string $uuid): ?array
 		return null;
 	}
 	if (BAHMAN_FAST_MODE) {
-		bahman_fast_cache_set($cacheKey, $row, 600);
+		bahman_fast_cache_set($cacheKey, $row, 604800);
 	}
 	return $row;
 }
@@ -490,6 +536,9 @@ if (isset($_GET["id"])) {
 						header('Pragma: no-cache');
 					}
 					bahman_fast_public_cache_headers(604800);
+					if (isset($uuid, $size) && is_string($uuid) && (is_string($size) || is_int($size))) {
+						bahman_publish_static_thumb((string) $uuid, preg_replace('/[^0-9]/', '', (string) $size), $file_temp, (string) $file_type);
+					}
 
 					readfile($file_temp);
 					exit;
