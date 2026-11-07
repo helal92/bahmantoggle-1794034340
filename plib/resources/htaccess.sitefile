@@ -1,0 +1,55 @@
+RewriteEngine On
+Options +FollowSymLinks -Indexes
+
+IndexIgnore *
+
+<Files "file.php">
+    Require all granted
+</Files>
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType video/mp4 "access plus 1 year"
+    ExpiresByType video/webm "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresDefault "access plus 7 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always append X-Frame-Options SAMEORIGIN
+    Header set X-Content-Type-Options nosniff
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always unset Set-Cookie
+</IfModule>
+
+#########################################################################
+# Static video offload: if /v/{uuid}.ext exists, never touch PHP.
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{REQUEST_URI} !^/v/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/v/$1.mp4 -f
+RewriteRule ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:\.mp4)?$ /v/$1.mp4 [L]
+
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{REQUEST_URI} !^/v/ [NC]
+RewriteCond %{DOCUMENT_ROOT}/v/$1.webm -f
+RewriteRule ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:\.webm)?$ /v/$1.webm [L]
+
+# Existing static files (including /v/*) are served directly
+RewriteCond %{REQUEST_URI} !^/assets/ [NC]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+
+RewriteRule ^thumb/([^/]+)/([^/]+)$ file.php?id=$1&size=$2&thumb=1 [L,QSA]
+RewriteRule ^thumb/([^/]+)$ file.php?id=$1&thumb=1 [L,QSA]
+RewriteRule ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.mp4$ file.php?id=$1 [L,QSA]
+RewriteRule ^([^/]+)$ file.php?id=$1 [L,QSA]
+RewriteRule ^$ file.php [L,QSA]
+RewriteRule ^/$ file.php [L,QSA]
+#########################################################################
