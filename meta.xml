@@ -3,7 +3,7 @@
   <id>bahmantoggle</id>
   <name>bahmantoggle</name>
   <description>Toggle bahman FAST_MODE and diagnostics</description>
-  <version>1.3.2</version>
+  <version>1.3.3</version>
   <release>1</release>
   <vendor>local</vendor>
 </module>

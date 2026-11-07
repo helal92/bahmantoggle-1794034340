@@ -11,7 +11,7 @@ $bahmanFastMode = is_file(__DIR__ . '/.FAST_MODE')
 	|| is_file('/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/.FAST_MODE');
 $bahmanPageCacheFile = null;
 if ($bahmanFastMode && isset($_GET['include']) && $_GET['include'] === 'sales') {
-	$bahmanPageCacheFile = __DIR__ . '/cache/pages/sales.html';
+	$bahmanPageCacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . '/bahman_sales_page.html';
 	$bahmanPageCacheTtl = 90;
 	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
 		header('Content-Type: text/html; charset=UTF-8');
@@ -183,15 +183,11 @@ if ($bahmanPageCacheFile && $template === 'sales') {
 	ob_start();
 	$smarty->display('templates/' . TEMPLATE_NAME . '/' . $template . '.tpl');
 	$html = ob_get_clean();
-	$cacheDir = dirname($bahmanPageCacheFile);
-	if (!is_dir($cacheDir)) {
-		@mkdir($cacheDir, 0755, true);
-	}
-	@file_put_contents($bahmanPageCacheFile, $html);
+	@file_put_contents($bahmanPageCacheFile, $html, LOCK_EX);
 	header('X-Bahman-Cache: MISS');
 	header('Cache-Control: public, max-age=60');
 	echo $html;
-	return;
+	exit;
 }
 
 $smarty->display('templates/' . TEMPLATE_NAME . '/' . $template . '.tpl');
