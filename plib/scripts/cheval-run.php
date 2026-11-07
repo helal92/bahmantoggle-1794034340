@@ -1,23 +1,15 @@
 <?php
 $root='/var/www/vhosts/bahman.ir/httpdocs';
-$sitefile='/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager';
-
-echo "=== hero template/js ===\n";
-echo shell_exec("grep -RniE 'hero-media|data-src|preload|autoplay|item_slider|swiper-slide' $root/templates/bahman --include='*.tpl' --include='*.js' --include='*.php' 2>/dev/null | head -80");
-
-echo "\n=== section1 / links render ===\n";
-echo shell_exec("grep -RniE 'hero-media|section-1|links' $root/templates/bahman --include='*.tpl' 2>/dev/null | head -40");
-
-echo "\n=== nginx sitefile ===\n";
-echo shell_exec("cat /var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf 2>/dev/null | head -120");
-echo "\n--- vhost_ssl ---\n";
-echo shell_exec("grep -nE 'location|sendfile|X-Accel|proxy|alias|root|mp4|Range' /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_ssl.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf 2>/dev/null | head -80");
-
-echo "\n=== file path on disk for empower ===\n";
-echo shell_exec("ls -la $sitefile/.FAST_MODE 2>/dev/null; ls $sitefile/file.php 2>/dev/null");
-// quick php one-liner via curl to resolve path would need oneshot; instead find BD460
-echo shell_exec("find /var/www/vhosts/siteapi.bahman.ir -name 'BD460.mp4' 2>/dev/null | head -5");
-echo shell_exec("du -h \$(find /var/www/vhosts/siteapi.bahman.ir -name 'BD460.mp4' 2>/dev/null | head -1) 2>/dev/null");
-
-echo "\n=== home-product / hero js files ===\n";
-echo shell_exec("ls -la $root/templates/bahman/assets/*hero* $root/templates/bahman/assets/*slider* $root/templates/bahman/assets/*video* 2>/dev/null");
+echo "=== files with hero-media ===\n";
+echo shell_exec("grep -Rnl 'hero-media' $root/templates/bahman 2>/dev/null");
+echo "\n=== assets list ===\n";
+echo shell_exec("ls -la $root/templates/bahman/assets/ 2>/dev/null | head -60");
+echo "\n=== hero-media context in tpl ===\n";
+echo shell_exec("grep -Rn 'hero-media' $root/templates/bahman --include='*.tpl' --include='*.js' --include='*.html' 2>/dev/null | head -40");
+echo "\n=== index/home tpl names ===\n";
+echo shell_exec("ls $root/templates/bahman/*.tpl 2>/dev/null; ls $root/templates/bahman/header 2>/dev/null; ls $root/templates/bahman/index* 2>/dev/null; find $root/templates/bahman -name '*home*' -o -name '*index*' -o -name '*slider*' 2>/dev/null | head -40");
+echo "\n=== nginx location php ===\n";
+echo shell_exec("grep -nE 'location|fastcgi|sendfile|internal|X-Accel' /var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_ssl.conf 2>/dev/null | head -100");
+echo "\n=== BD460 path ===\n";
+echo shell_exec("find /var/www/vhosts/siteapi.bahman.ir -name 'BD460*' 2>/dev/null | head -10");
+echo shell_exec("ls /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/ 2>/dev/null | head -30");
