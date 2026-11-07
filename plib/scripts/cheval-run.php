@@ -1,20 +1,16 @@
 <?php
-// nginx / apache routing for sitefile
-echo "=== apache vhost sitefile ===\n";
-echo shell_exec("grep -nE 'Rewrite|Proxy|Alias|DocumentRoot|php|file_manager|Location' /var/www/vhosts/system/sitefile.bahman.ir/conf/httpd.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost.conf /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_ssl.conf 2>/dev/null | head -80");
-echo "\n=== nginx files exist? ===\n";
-echo shell_exec("ls -la /var/www/vhosts/system/sitefile.bahman.ir/conf/");
-echo "\n=== additional nginx directives ===\n";
-echo shell_exec("cat /var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_nginx.conf 2>/dev/null; ls /var/www/vhosts/system/sitefile.bahman.ir/conf/*nginx* 2>/dev/null");
-echo shell_exec("plesk bin site --info sitefile.bahman.ir 2>/dev/null | head -40");
-// where are media files stored?
-echo "\n=== resolve BD460 via meta cache ===\n";
-$fm='/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager';
-echo shell_exec("ls $fm/cache/meta_* 2>/dev/null | wc -l");
-$id='61491e0c-bfc8-11f1-9600-005056b972d8';
-echo shell_exec("grep -l '$id' $fm/cache/meta_*.json 2>/dev/null | head -3 | while read f; do echo FILE \$f; cat \$f; echo; done");
-echo shell_exec("find /var/www/vhosts/siteapi.bahman.ir -name 'BD460.mp4' 2>/dev/null");
-// X-Sendfile module?
-echo "\n=== apache modules ===\n";
-echo shell_exec("httpd -M 2>/dev/null | grep -iE 'sendfile|xsend|headers|proxy'; apachectl -M 2>/dev/null | grep -iE 'sendfile|xsend'");
-echo shell_exec("nginx -V 2>&1 | tr ' ' '\\n' | grep -i send");
+echo "NGINX.CONF:\n";
+echo file_get_contents('/var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf');
+echo "\n\nVHOST_SSL:\n";
+echo file_get_contents('/var/www/vhosts/system/sitefile.bahman.ir/conf/vhost_ssl.conf');
+echo "\n\nVHOST:\n";
+echo file_get_contents('/var/www/vhosts/system/sitefile.bahman.ir/conf/vhost.conf');
+echo "\n\nHTTPD rewrite snippet:\n";
+echo shell_exec("grep -nE 'RewriteRule|file\\.php|ProxyPass|DocumentRoot|Alias' /var/www/vhosts/system/sitefile.bahman.ir/conf/httpd.conf | head -40");
+echo "\nuploads path:\n";
+echo shell_exec("ls -la /var/www/vhosts/siteapi.bahman.ir/httpdocs/uploads/app_1/bp_companies_1/1791100281-38666780.mp4");
+echo shell_exec("ls -la /var/www/vhosts/sitefile.bahman.ir/httpdocs 2>/dev/null | head");
+echo shell_exec("readlink -f /var/www/vhosts/sitefile.bahman.ir/httpdocs; ls /var/www/vhosts/sitefile.bahman.ir/");
+// additional directives from plesk db?
+echo shell_exec("mysql -uadmin -p$(cat /etc/psa/.psa.shadow) -N -e \"SELECT value FROM psa.dom_param WHERE dom_id=7 AND param LIKE '%nginx%'\" 2>/dev/null | head");
+echo shell_exec("plesk bin site --show-web-server-settings sitefile.bahman.ir 2>/dev/null | head -60");
