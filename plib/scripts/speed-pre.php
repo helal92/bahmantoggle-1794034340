@@ -1,15 +1,13 @@
 <?php
-echo "=== PRE ===\n";
-echo "load=".trim(@file_get_contents('/proc/loadavg'))."\n";
-echo "fpm_sitefile=".trim(shell_exec('ps -eo cmd | grep "[p]hp-fpm: pool sitefile" | wc -l'))."\n";
-echo "fpm_bahman=".trim(shell_exec('ps -eo cmd | grep "[p]hp-fpm: pool bahman" | wc -l'))."\n";
-echo "wrappers=".trim(shell_exec('ps -eo pid,cmd | grep "[w]rapper" | wc -l'))."\n";
-echo "fast=".(is_file('/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/.FAST_MODE')?'ON':'OFF')."\n";
-echo "sitefile php-fpm confs:\n";
-echo trim(shell_exec('ls -la /var/www/vhosts/system/sitefile.bahman.ir/etc/ 2>&1'))."\n";
-echo trim(shell_exec('find /var/www/vhosts/system/sitefile.bahman.ir /opt/plesk/php -name "*fpm*" 2>/dev/null | head -40'))."\n";
-echo "pool grep:\n".trim(shell_exec('grep -R "pm.max_children\|pm.start\|pm.min\|pm.max_spare\|\[sitefile\|\[bahman" /var/www/vhosts/system/sitefile.bahman.ir/etc /var/www/vhosts/system/bahman.ir/etc 2>/dev/null | head -60'))."\n";
-echo "htaccess sitefile:\n".trim(shell_exec('ls -la /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/.htaccess /var/www/vhosts/sitefile.bahman.ir/httpdocs/.htaccess 2>&1; head -80 /var/www/vhosts/sitefile.bahman.ir/httpdocs/.htaccess 2>&1; head -40 /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/.htaccess 2>&1'))."\n";
-echo "vhost sitefile:\n".trim(shell_exec('ls /var/www/vhosts/system/sitefile.bahman.ir/conf/ 2>&1; head -5 /var/www/vhosts/system/sitefile.bahman.ir/conf/httpd.conf 2>&1'))."\n";
-echo "file.php head:\n".trim(shell_exec('head -5 /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/file.php 2>&1; wc -l /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/file.php 2>&1'))."\n";
-echo "docroots:\n".trim(shell_exec('plesk bin domain --info sitefile.bahman.ir 2>&1 | grep -iE "root|FTP|Login|PHP" | head -20'))."\n";
+echo trim(shell_exec('grep -R "pm.max_children\|pm.start_servers\|\[sitefile\|pool sitefile" /opt/plesk/php /usr/local/psa /var/www/vhosts/system --include="*.conf" 2>/dev/null | grep -i sitefile | head -40'))."\n";
+echo "----\n";
+echo trim(shell_exec('find /opt/plesk/php /var/www/vhosts/system -name "*.conf" 2>/dev/null | xargs grep -l "sitefile" 2>/dev/null | head -20'))."\n";
+echo "----\n";
+echo trim(shell_exec('plesk bin domain --show-php-settings sitefile.bahman.ir 2>&1 | head -80'))."\n";
+echo "----\n";
+echo trim(shell_exec('ls -la /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/ | head -30'))."\n";
+echo trim(shell_exec('find /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager -maxdepth 2 -type d 2>/dev/null | head -30'))."\n";
+# how thumbs stored
+echo trim(shell_exec('ls /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/files 2>&1 | head; ls /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/thumbs 2>&1 | head; ls /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/cache 2>&1 | head'))."\n";
+echo "mpm:\n".trim(shell_exec('cat /etc/apache2/mods-enabled/mpm_event.conf 2>/dev/null'))."\n";
+echo "php handlers:\n".trim(shell_exec('plesk bin php_handler --list 2>&1 | head -40'))."\n";
