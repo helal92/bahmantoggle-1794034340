@@ -1,20 +1,18 @@
 <?php
 $fm='/usr/local/psa/admin/bin/filemng';
-// read nginx as root via filemng? filemng is for vhost user files.
-// Try running as root with full path through plesk php - the CLI extension might support --exec with root
-echo "uid=".posix_geteuid()." user=".posix_getpwuid(posix_geteuid())['name']."\n";
-echo "groups=".implode(',', posix_getgroups())."\n";
-// Can we read via /usr/bin/cat as root from API wrapper? Try plesk daily or 
-echo shell_exec('/usr/bin/id; /usr/bin/ls -la /var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf');
-// Copy conf to /tmp readable
-$out = [];
-exec('/bin/cp /var/www/vhosts/system/sitefile.bahman.ir/conf/nginx.conf /tmp/sf_nginx.conf 2>&1', $out, $code);
-echo "cp_code=$code out=".implode(' ',$out)."\n";
-if (is_file('/tmp/sf_nginx.conf')) echo file_get_contents('/tmp/sf_nginx.conf');
-exec('/bin/cp /var/www/vhosts/system/sitefile.bahman.ir/conf/httpd.conf /tmp/sf_httpd.conf 2>&1', $out2, $code2);
-echo "\nhttpd_cp=$code2\n";
-if (is_file('/tmp/sf_httpd.conf')) {
-  echo shell_exec("grep -nE 'RewriteRule|file\\.php|DocumentRoot|Alias|ProxyPass|XSendFile' /tmp/sf_httpd.conf | head -60");
-}
-// sitefile domain root
-echo shell_exec("plesk db -Ne \"SELECT d.name, h.www_root FROM domains d JOIN hosting h ON h.dom_id=d.id WHERE d.name IN ('sitefile.bahman.ir','siteapi.bahman.ir','bahman.ir')\" 2>&1");
+$user=trim((string)shell_exec("stat -c '%U' /var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/file.php"));
+$doc='/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager';
+echo "user=$user\n";
+echo shell_exec("ls -la $doc/.htaccess $doc/file.php $doc/.FAST_MODE 2>&1");
+echo "HTACCESS:\n";
+echo @file_get_contents("$doc/.htaccess");
+echo "\n\n";
+echo shell_exec("ls $doc | head -40");
+// can psaadm write via filemng?
+echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg($user).' mkdir '.escapeshellarg("$doc/v").' 2>&1');
+echo shell_exec("ls -lad $doc/v 2>&1");
+// apache modules via php?
+echo shell_exec("curl -skI --max-time 10 -H 'Host: sitefile.bahman.ir' 'https://172.20.14.76/file.php' | head -20");
+echo shell_exec("curl -skI --max-time 10 -H 'Host: sitefile.bahman.ir' 'https://172.20.14.76/' | head -20");
+// index of bahman templates - pull index.tpl + hero js for local edit deploy
+echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg(trim((string)shell_exec("stat -c '%U' /var/www/vhosts/bahman.ir/httpdocs/index.php"))).' cat '.escapeshellarg('/var/www/vhosts/bahman.ir/httpdocs/templates/bahman/index.tpl').' 2>&1 | sed -n "40,60p"');
