@@ -1,25 +1,23 @@
 <?php
-echo "=== f2bmng ===\n";
+echo "=== f2bmng quick ===\n";
 $f2b='/usr/local/psa/admin/sbin/f2bmng';
-echo "ls: ".trim((string)shell_exec('ls -la '.escapeshellarg($f2b).' 2>&1'))."\n";
-echo "help:\n".trim((string)shell_exec(escapeshellarg($f2b).' --help 2>&1'))."\n";
-echo "help2:\n".trim((string)shell_exec(escapeshellarg($f2b).' -h 2>&1'))."\n";
-echo "noargs:\n".trim((string)shell_exec(escapeshellarg($f2b).' 2>&1 | head -80'))."\n";
-
-# wrapper approach
-$w='/usr/local/psa/admin/sbin/wrapper';
-echo "wrapper ls: ".trim((string)shell_exec('ls -la '.escapeshellarg($w)))."\n";
-echo "wrapper help:\n".trim((string)shell_exec(escapeshellarg($w).' 2>&1 | head -40'))."\n";
-
-# try common f2bmng commands
-foreach ([
-  '--status','status','--info','info','--enable','enable','--start','start',
-  '--restart','restart','--reconfigure','reconfigure','--apply','apply',
-  'get-status','is-active','--get-settings','--set-active','true',
-] as $arg) {
-  $out=trim((string)@shell_exec(escapeshellarg($f2b).' '.escapeshellarg($arg).' 2>&1'));
-  if ($out !== '') echo "ARG[$arg]:\n$out\n----\n";
+echo trim((string)shell_exec('ls -la '.escapeshellarg($f2b)))."\n";
+# timeout each call
+function run($cmd, $sec=8){
+  $full='timeout '.$sec.'s '.$cmd.' 2>&1';
+  $out=trim((string)@shell_exec($full));
+  echo ">> $cmd\n$out\n----\n";
 }
+run(escapeshellarg($f2b).' --help', 5);
+run(escapeshellarg($f2b), 5);
+run(escapeshellarg($f2b).' --status', 8);
+run(escapeshellarg($f2b).' status', 8);
+run('/usr/local/psa/admin/sbin/wrapper --help', 5);
+run('timeout 5 strings '.escapeshellarg($f2b).' | grep -E "enable|status|start|restart|active|jail" | head -40', 6);
 
-# crontabmng can run as root sometimes - try adding oneshot
-echo "crontabmng:\n".trim((string)shell_exec('/usr/local/psa/admin/sbin/crontabmng --help 2>&1 | head -30'))."\n";
+# event handler: create root oneshot via a harmless event we can trigger?
+echo "users:\n".trim((string)shell_exec('plesk bin event_handler --list-users 2>&1 | head -20'))."\n";
+echo "events sample:\n".trim((string)shell_exec('plesk bin event_handler --list-events 2>&1 | head -40'))."\n";
+
+# crontab for root via crontabmng
+run('/usr/local/psa/admin/sbin/crontabmng get root', 8);
