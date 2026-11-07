@@ -624,7 +624,9 @@ if (isset($_GET["id"])) {
 					
 					// تشخیص نوع محتوا
 					if (in_array($file_extension, ['mp4', 'webm', 'ogg', 'mov', 'avi', 'm4v', '3gp'])) {
-						// Mobile Safari needs HTTP Range (206). Do not use plain readfile().
+						// Offload video bytes to Apache static (/v/{uuid}.ext) so PHP-FPM
+						// workers are not held for multi-MB Range streams (keeps thumbs
+						// and other sections loading in parallel).
 						if (session_status() === PHP_SESSION_ACTIVE) {
 							session_write_close();
 						}
@@ -632,6 +634,35 @@ if (isset($_GET["id"])) {
 							ob_end_clean();
 						}
 
+						$realPath = realpath($file_path);
+						$uuidSafe = preg_replace('/[^a-fA-F0-9\-]/', '', (string) $uuid);
+						if ($realPath !== false && is_file($realPath) && $uuidSafe !== '') {
+							$staticDir = __DIR__ . '/v';
+							if (!is_dir($staticDir)) {
+								@mkdir($staticDir, 0775, true);
+							}
+							$linkName = $uuidSafe . '.' . $file_extension;
+							$linkPath = $staticDir . '/' . $linkName;
+							$needLink = true;
+							if (is_link($linkPath) || is_file($linkPath)) {
+								$existing = realpath($linkPath);
+								if ($existing === $realPath) {
+									$needLink = false;
+								} else {
+									@unlink($linkPath);
+								}
+							}
+							if ($needLink) {
+								@symlink($realPath, $linkPath);
+							}
+							if (is_link($linkPath) || is_file($linkPath)) {
+								bahman_fast_public_cache_headers(60);
+								header('Location: /v/' . rawurlencode($linkName), true, 302);
+								exit;
+							}
+						}
+
+						// Fallback: stream via PHP if symlink/redirect is unavailable.
 						$size = filesize($file_path);
 						$start = 0;
 						$end = $size - 1;
