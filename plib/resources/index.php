@@ -10,8 +10,23 @@ ini_set('display_errors', '1');
 $bahmanFastMode = is_file(__DIR__ . '/.FAST_MODE')
 	|| is_file('/var/www/vhosts/siteapi.bahman.ir/httpdocs/file_manager/.FAST_MODE');
 $bahmanPageCacheFile = null;
+$bahmanTmpDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR);
+
+// Product mega-menu fragment: always cache 5 minutes (public catalog).
+if (isset($_GET['include']) && $_GET['include'] === 'product_menu') {
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_product_menu_fragment.html';
+	$bahmanPageCacheTtl = 300;
+	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
+		header('Content-Type: text/html; charset=UTF-8');
+		header('X-Bahman-Cache: HIT');
+		header('Cache-Control: public, max-age=300');
+		readfile($bahmanPageCacheFile);
+		exit;
+	}
+}
+
 if ($bahmanFastMode && isset($_GET['include']) && $_GET['include'] === 'sales') {
-	$bahmanPageCacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . '/bahman_sales_page.html';
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_sales_page.html';
 	$bahmanPageCacheTtl = 90;
 	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
 		header('Content-Type: text/html; charset=UTF-8');
@@ -179,14 +194,22 @@ $smarty->registerPlugin(
     }
 );
 
-if ($bahmanPageCacheFile && $template === 'sales') {
+if ($bahmanPageCacheFile && ($template === 'sales' || $template === 'product_menu_fragment')) {
 	ob_start();
 	$smarty->display('templates/' . TEMPLATE_NAME . '/' . $template . '.tpl');
 	$html = ob_get_clean();
 	@file_put_contents($bahmanPageCacheFile, $html, LOCK_EX);
+	header('Content-Type: text/html; charset=UTF-8');
 	header('X-Bahman-Cache: MISS');
-	header('Cache-Control: public, max-age=60');
+	header('Cache-Control: public, max-age=' . ($template === 'product_menu_fragment' ? '300' : '60'));
 	echo $html;
+	exit;
+}
+
+if ($template === 'product_menu_fragment') {
+	header('Content-Type: text/html; charset=UTF-8');
+	header('Cache-Control: public, max-age=300');
+	$smarty->display('templates/' . TEMPLATE_NAME . '/' . $template . '.tpl');
 	exit;
 }
 

@@ -1,0 +1,133 @@
+# جلوگیری از دسترسی مستقیم به فایل‌های حساس
+<FilesMatch "\.(inc|txt|json|xml)$">
+    Require all denied
+</FilesMatch>
+
+# اجازه به فایل index.php
+<Files "index.php">
+    Require all granted
+</Files>
+
+# جلوگیری از لیست شدن محتوای پوشه‌ها
+Options -Indexes
+
+####################################
+# SEO-Friendly routes (Bahman + Iran Docharkh)
+# Shared local/prod-safe rules — NO RewriteBase
+####################################
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # CMS media thumbs (Iran Docharkh / local FILE_URL proxy)
+    RewriteRule ^thumb/([0-9a-fA-F\-]{36})/([0-9]+)/?$ media/thumb.php?uuid=$1&size=$2 [L,QSA]
+
+    # iOS-safe video URLs (must end with .mp4) → stream proxy
+    RewriteRule ^media/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\.mp4$ media/video.php?id=$1 [L,QSA]
+
+    RewriteRule ^$ index.php?include=index [L,QSA]
+    RewriteRule ^/?$ index.php?include=index [L,QSA]
+
+    # Product category (Iran Docharkh)
+    RewriteRule ^product-category/([0-9]+)/([^/]+)/?$ index.php?include=show_product_category&category_id=$1&slug=$2 [L,QSA]
+    RewriteRule ^product-category/([0-9]+)/?$ index.php?include=show_product_category&category_id=$1 [L,QSA]
+    RewriteRule ^product-category/?$ index.php?include=product_category [L,QSA]
+
+    # Product
+    RewriteRule ^product/?$ index.php?include=product [L,QSA]
+    RewriteRule ^product/([0-9]+)/?$ index.php?include=show_product&product_id=$1 [L,QSA]
+    RewriteRule ^product/([0-9]+)/([^/]+)/?$ index.php?include=show_product&product_id=$1&slug=$2 [L,QSA]
+
+    # Articles / posts (Bahman)
+    RewriteRule ^article/?$ index.php?include=article [L,QSA]
+    RewriteRule ^post/([0-9]+)/?$ index.php?include=show_article&article_id=$1 [L,QSA]
+    RewriteRule ^post/([0-9]+)/([^/]+)/?$ index.php?include=show_article&article_id=$1&slug=$2 [L,QSA]
+
+    # Blog
+    RewriteRule ^blog/?$ index.php?include=blog [L,QSA]
+    RewriteRule ^blog/([0-9]+)/?$ index.php?include=show_blog&blog_id=$1 [L,QSA]
+    RewriteRule ^blog/([0-9]+)/([^/]+)/?$ index.php?include=show_blog&blog_id=$1&slug=$2 [L,QSA]
+
+    # Events / videos (Bahman)
+    RewriteRule ^event/?$ index.php?include=event [L,QSA]
+    RewriteRule ^event/([0-9]+)/?$ index.php?include=show_event&event_id=$1 [L,QSA]
+    RewriteRule ^event/([0-9]+)/([^/]+)/?$ index.php?include=show_event&event_id=$1&slug=$2 [L,QSA]
+
+    RewriteRule ^video/?$ index.php?include=video [L,QSA]
+    RewriteRule ^video/([0-9]+)/?$ index.php?include=show_video&video_id=$1 [L,QSA]
+    RewriteRule ^video/([0-9]+)/([^/]+)/?$ index.php?include=show_video&video_id=$1&slug=$2 [L,QSA]
+
+    # Lazy product mega-menu fragment (header)
+    RewriteRule ^product-menu/?$ index.php?include=product_menu [L,QSA]
+
+    # Bahman landings
+    RewriteRule ^sales/?$ index.php?include=sales [L,QSA]
+    RewriteRule ^after-sale-services/?$ index.php?include=after_sales [L,QSA]
+    RewriteRule ^chc/?$ index.php?include=chc [L,QSA]
+    RewriteRule ^emdad/?$ index.php?include=emdad [L,QSA]
+    RewriteRule ^branch/?$ index.php?include=agency [L,QSA]
+    RewriteRule ^showroom/?$ index.php?include=showroom [L,QSA]
+    RewriteRule ^agency-request/?$ index.php?include=agency_request [L,QSA]
+
+    RewriteRule ^brand/([0-9]+)/?$ index.php?include=brand&brand_id=$1 [L,QSA]
+    RewriteRule ^brand/([0-9]+)/([^/]+)/?$ index.php?include=brand&brand_id=$1&slug=$2 [L,QSA]
+
+    # Contact / about / search / CMS pages
+    RewriteRule ^contactUs/?$ index.php?include=contact_us [L,QSA]
+    RewriteRule ^contact-us/?$ index.php?include=contact_us [L,QSA]
+    RewriteRule ^about-us/?$ index.php?include=about_us [L,QSA]
+    RewriteRule ^search/?$ index.php?include=search [L,QSA]
+
+    RewriteRule ^page/([0-9]+)/?$ index.php?include=show_page&page_id=$1 [L,QSA]
+    RewriteRule ^page/([0-9]+)/([^/]+)/?$ index.php?include=show_page&page_id=$1&slug=$2 [L,QSA]
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !file_manager/file\.php$ [NC]
+    RewriteRule ^(.*)$ index.php?/$1 [L,QSA]
+</IfModule>
+
+# فعال کردن فشرده‌سازی Gzip برای افزایش سرعت
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript application/json
+</IfModule>
+
+# تنظیمات کش
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/pdf "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType application/x-javascript "access plus 1 month"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresDefault "access plus 2 days"
+</IfModule>
+
+####################################
+# SECURITY HARDENING
+####################################
+
+<FilesMatch "^(composer\.json|composer\.lock|composer\.phar|\.DS_Store)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "\.(log|bak|sql|tar|gz|zip|rar)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+    Header always unset X-Powered-By
+    Header always unset Server
+</IfModule>
+
+<IfModule mod_php.c>
+    php_flag expose_php Off
+</IfModule>

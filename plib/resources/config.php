@@ -1473,6 +1473,72 @@ function bahman_cms_search_site(string $query): array
     return $results;
 }
 
+/**
+ * Product mega-menu / homepage tree (categories + products).
+ * Cached on disk ~5 minutes — shared by /product-menu fragment, index, and /product.
+ */
+function bahman_cms_product_category_tree(?int $filterBrandId = null): array
+{
+    $cacheFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . '/bahman_product_category_tree.cache';
+    $ttl = 300;
+    $list = null;
+    if (is_file($cacheFile) && (time() - (int) filemtime($cacheFile)) < $ttl) {
+        $list = @unserialize((string) file_get_contents($cacheFile));
+    }
+    if (!is_array($list)) {
+        $product_category = new CmsContent();
+        $product_category
+            ->setType('product_category')
+            ->setChildTable(['product:product_category'])
+            ->setCount(-1)
+            ->setFields('title');
+        $list = $product_category->execute();
+        unset($product_category);
+        if (!is_array($list)) {
+            $list = [];
+        }
+        @file_put_contents($cacheFile, serialize($list), LOCK_EX);
+    }
+
+    if ($filterBrandId) {
+        $branchKey = (string) $filterBrandId;
+        foreach ($list as $catIndex => $category) {
+            if (empty($category['child_table']['product_category']) || !is_array($category['child_table']['product_category'])) {
+                unset($list[$catIndex]);
+                continue;
+            }
+            $filtered = [];
+            foreach ($category['child_table']['product_category'] as $productItem) {
+                $companyRaw = (string) ($productItem['values']['company'] ?? '');
+                if ($companyRaw === '') {
+                    continue;
+                }
+                $companyIds = array_filter(array_map('trim', explode(',', $companyRaw)));
+                if (in_array($branchKey, $companyIds, true)) {
+                    $filtered[] = $productItem;
+                }
+            }
+            if ($filtered === []) {
+                unset($list[$catIndex]);
+                continue;
+            }
+            $list[$catIndex]['child_table']['product_category'] = $filtered;
+        }
+        $list = array_values($list);
+    }
+
+    $list = bahman_cms_sort_by_list_priority($list);
+    foreach ($list as $catIndex => $category) {
+        $products = $category['child_table']['product_category'] ?? null;
+        if (!is_array($products) || $products === []) {
+            continue;
+        }
+        $list[$catIndex]['child_table']['product_category'] = bahman_cms_sort_by_list_priority($products);
+    }
+
+    return $list;
+}
+
 if (!isset($_GET['include']) || $_GET['include'] === '') {
     $_GET['include'] = '404';
 }
@@ -1492,6 +1558,7 @@ $og_image = null;
 $og_image_alt = null;
 $og_type = 'website';
 $canonical_url = null;
+$bahmanSkipSharedNavQueries = false;
 
 if (isset($_GET['include'])) {
 
@@ -2179,6 +2246,12 @@ if (isset($_GET['include'])) {
             @$smarty->assign('show_product', $show_product[0]);
             unset($product);
             unset($show_product);
+            break;
+        case 'product_menu':
+            // Lazy fragment for header mega-menu (no full page chrome).
+            $template = 'product_menu_fragment';
+            $bahmanSkipSharedNavQueries = true;
+            $smarty->assign('product_category', bahman_cms_product_category_tree(null));
             break;
         case 'sales':
             $template = 'sales';
@@ -3687,75 +3760,34 @@ if (isset($_GET['include'])) {
 
     $smarty->assign('is_404', isset($template) && $template === '404');
 
-    $product_category = new CmsContent();
-    $product_category
-        ->setType('product_category')
-        ->setChildTable(['product:product_category'])
-        ->setCount(-1)
-        ->setFields("title");
-
-    $product_category_list = $product_category->execute();
-    unset($product_category);
-    if (!is_array($product_category_list)) {
-        $product_category_list = [];
-    }
-
-    // Filter products by direct product.company field (brand_id / company query param)
-    $filter_brand_id = null;
-    if (isset($_GET['include']) && $_GET['include'] === 'product') {
-        if (isset($_GET['brand_id']) && is_numeric($_GET['brand_id'])) {
-            $filter_brand_id = (int) $_GET['brand_id'];
-        } elseif (isset($_GET['company']) && is_numeric($_GET['company'])) {
-            $filter_brand_id = (int) $_GET['company'];
+    // Heavy product tree: only for homepage / product listing (header mega-menu loads via /product-menu).
+    if (empty($bahmanSkipSharedNavQueries)) {
+        $needsProductTree = isset($template) && ($template === 'index' || $template === 'product');
+        $filter_brand_id = null;
+        if ($needsProductTree && isset($_GET['include']) && $_GET['include'] === 'product') {
+            if (isset($_GET['brand_id']) && is_numeric($_GET['brand_id'])) {
+                $filter_brand_id = (int) $_GET['brand_id'];
+            } elseif (isset($_GET['company']) && is_numeric($_GET['company'])) {
+                $filter_brand_id = (int) $_GET['company'];
+            }
+        }
+        if ($needsProductTree) {
+            $product_category_list = bahman_cms_product_category_tree($filter_brand_id);
+            if ($filter_brand_id) {
+                $smarty->assign('filter_branch_id', $filter_brand_id);
+                $smarty->assign('product_filter_branch_id', $filter_brand_id);
+            }
+            $smarty->assign('product_category', $product_category_list);
+            unset($product_category_list);
+        } else {
+            $smarty->assign('product_category', []);
         }
     }
 
-    if ($filter_brand_id && is_array($product_category_list)) {
-        $branch_key = (string) $filter_brand_id;
-
-        foreach ($product_category_list as $cat_index => $category) {
-            if (empty($category['child_table']['product_category']) || !is_array($category['child_table']['product_category'])) {
-                unset($product_category_list[$cat_index]);
-                continue;
-            }
-
-            $filtered_products = [];
-            foreach ($category['child_table']['product_category'] as $product_item) {
-                $company_raw = (string) ($product_item['values']['company'] ?? '');
-                if ($company_raw === '') {
-                    continue;
-                }
-                $company_ids = array_filter(array_map('trim', explode(',', $company_raw)));
-                if (in_array($branch_key, $company_ids, true)) {
-                    $filtered_products[] = $product_item;
-                }
-            }
-
-            if (empty($filtered_products)) {
-                unset($product_category_list[$cat_index]);
-                continue;
-            }
-
-            $product_category_list[$cat_index]['child_table']['product_category'] = $filtered_products;
-        }
-
-        $product_category_list = array_values($product_category_list);
-        $smarty->assign('filter_branch_id', $filter_brand_id);
-        $smarty->assign('product_filter_branch_id', $filter_brand_id);
+    if (!empty($bahmanSkipSharedNavQueries)) {
+        // Fragment endpoints: skip company + CMS menu queries.
+        return;
     }
-
-    // Categories by category priority; products inside each category by product priority
-    $product_category_list = bahman_cms_sort_by_list_priority($product_category_list);
-    foreach ($product_category_list as $cat_index => $category) {
-        $products = $category['child_table']['product_category'] ?? null;
-        if (!is_array($products) || $products === []) {
-            continue;
-        }
-        $product_category_list[$cat_index]['child_table']['product_category'] = bahman_cms_sort_by_list_priority($products);
-    }
-
-    $smarty->assign('product_category', $product_category_list);
-    unset($product_category_list);
 
     $company = new CmsContent();
     $company
