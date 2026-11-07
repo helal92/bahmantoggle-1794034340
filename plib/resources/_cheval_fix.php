@@ -6,55 +6,81 @@ header('Content-Type: text/plain; charset=utf-8');
 chdir(__DIR__);
 include_once 'autoload.php';
 
-echo "funcs Execute=". (function_exists(__NAMESPACE__.'\\Execute')||function_exists('Execute')?'yes':'no') ."\n";
-echo "ExecuteRows=". (function_exists(__NAMESPACE__.'\\ExecuteRows')?'yes':'no') ."\n";
-echo "ExecuteScalar=". (function_exists(__NAMESPACE__.'\\ExecuteScalar')?'yes':'no') ."\n";
+$contentId = 23;
+$fieldKey = 'links'; // likely
 
-// Config DB
-try {
-  $c = Config('CONNECTION');
-  echo "CONNECTION=".json_encode($c['DB'] ?? $c, JSON_UNESCAPED_UNICODE)."\n";
-} catch (\Throwable $e) {
-  echo "config err ".$e->getMessage()."\n";
-}
-
-$db = ExecuteScalar('SELECT DATABASE()');
-echo "database=$db\n";
-$cnt = ExecuteScalar("SELECT COUNT(*) FROM cms_content_field_values WHERE value LIKE '%شوال%' OR value LIKE '%CHEVAL%'");
-echo "cheval_count=$cnt\n";
-
-$sectionKeys = ExecuteScalar("SELECT COUNT(*) FROM cms_content_field_values v JOIN cms_content_type_fields f ON f.id=v.content_type_field_id WHERE f.`key`='section_key' AND v.value='section-1'");
-echo "section1_count=$sectionKeys\n";
-
-// list section-1 content ids
-$rs = Execute("SELECT c.id, c.parent_id, c.content_type_id, c.status FROM cms_contents c
-JOIN cms_content_field_values sk ON sk.content_id=c.id
-JOIN cms_content_type_fields fsk ON fsk.id=sk.content_type_field_id AND fsk.`key`='section_key' AND sk.value='section-1'
-ORDER BY c.id DESC LIMIT 20");
-echo "section1 rows:\n";
+// find field ids for content 23 with CHEVAL
+$rs = Execute("SELECT v.id AS value_id, f.`key` AS field_key, v.value
+FROM cms_content_field_values v
+JOIN cms_content_type_fields f ON f.id=v.content_type_field_id
+WHERE v.content_id=$contentId AND (v.value LIKE '%CHEVAL%' OR v.value LIKE '%شوال%')");
+echo "MATCHING FIELDS:\n";
+$targets = [];
 if ($rs) {
   while (!$rs->EOF()) {
-    $f=$rs->fields;
-    echo json_encode($f, JSON_UNESCAPED_UNICODE)."\n";
+    $f = $rs->fields;
+    echo "value_id={$f['value_id']} key={$f['field_key']} len=".strlen($f['value'])."\n";
+    $targets[] = ['id'=>$f['value_id'], 'key'=>$f['field_key'], 'value'=>$f['value']];
     $rs->MoveNext();
   }
   $rs->Close();
 }
 
-// landing 22
-$p = ExecuteScalar("SELECT id FROM cms_contents WHERE id=22 OR old_cms_id=22 LIMIT 1");
-echo "landing22=$p\n";
-$child = ExecuteScalar("SELECT COUNT(*) FROM cms_contents WHERE parent_id=22");
-echo "children_of_22=$child\n";
-
-// dump titles from any link json containing HEV or 6
-$rs = Execute("SELECT content_id, LEFT(value,200) FROM cms_content_field_values WHERE value LIKE '%HEV%' OR value LIKE '%شوال%' LIMIT 10");
-echo "HEV/شوال samples:\n";
-if ($rs) {
-  while (!$rs->EOF()) {
-    echo json_encode($rs->fields, JSON_UNESCAPED_UNICODE)."\n";
-    $rs->MoveNext();
+$changed = 0;
+foreach ($targets as $t) {
+  $decoded = json_decode($t['value'], true);
+  if (!is_array($decoded)) {
+    echo "skip non-json key={$t['key']}\n";
+    continue;
   }
-  $rs->Close();
+  $mod = false;
+  foreach ($decoded as $i => &$item) {
+    if (!is_array($item)) continue;
+    $hay = ($item['title'] ?? '').' '.($item['content'] ?? '').' '.($item['href'] ?? '');
+    if (stripos($hay, 'CHEVAL') !== false || mb_strpos($hay, 'شوال') !== false) {
+      echo "FOUND item[$i] title=".($item['title']??'')." content=".($item['content']??'')." status=".($item['status']??'?')."\n";
+      if ((int)($item['status'] ?? 1) !== 0) {
+        $item['status'] = 0;
+        $mod = true;
+        $changed++;
+      }
+    }
+  }
+  unset($item);
+  if ($mod) {
+    $newJson = json_encode($decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $esc = addslashes($newJson);
+    Execute("UPDATE cms_content_field_values SET value='$esc' WHERE id=".(int)$t['id']);
+    echo "UPDATED value_id={$t['id']} key={$t['key']}\n";
+  }
+}
+
+// also disable whole section content 23 if needed? No - only slide.
+// clear home caches
+$cacheDir = __DIR__ . '/_cache';
+$cleared = [];
+foreach (['bahman_home_page_v4.html','bahman_home_page_v3.html','bahman_home_page_v2.html','bahman_home_page.html'] as $f) {
+  $p = "$cacheDir/$f";
+  if (is_file($p)) { @unlink($p); $cleared[] = $f; }
+}
+// also any home*
+foreach (glob("$cacheDir/*home*") ?: [] as $p) {
+  @unlink($p);
+  $cleared[] = basename($p);
+}
+
+echo "changed_items=$changed cleared=".implode(',', array_unique($cleared))."\n";
+
+// verify
+$val = ExecuteScalar("SELECT value FROM cms_content_field_values v
+JOIN cms_content_type_fields f ON f.id=v.content_type_field_id
+WHERE v.content_id=23 AND f.`key`='links' LIMIT 1");
+$arr = json_decode($val, true);
+echo "VERIFY links count=".count($arr)."\n";
+foreach ($arr as $i=>$item) {
+  $hay = ($item['title']??'').' '.($item['content']??'');
+  if (stripos($hay,'CHEVAL')!==false || mb_strpos($hay,'شوال')!==false) {
+    echo "slide[$i] status=".($item['status']??'?')." content=".($item['content']??'')." title=".($item['title']??'')."\n";
+  }
 }
 echo "DONE\n";
