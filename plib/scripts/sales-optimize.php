@@ -34,7 +34,7 @@ echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg($user).' cp '.escapeshell
 @mkdir($doc.'/cache/pages', 0755, true);
 @chown($doc.'/cache/pages', $user);
 @unlink('/tmp/bahman_sales_page_data.cache');
-@cache=$doc.'/cache/pages/sales.html'; if (is_file($cache)) @unlink($cache);
+$cache=$doc.'/cache/pages/sales.html'; if (is_file($cache)) @unlink($cache);
 
 echo "grep_cache=". (strpos((string)@file_get_contents($doc.'/index.php'),'X-Bahman-Cache')!==false ? 'yes':'no') ."\n";
 echo "grep_thumb600=". (strpos((string)@file_get_contents($doc.'/templates/bahman/sales.tpl'),'/600')!==false ? 'yes':'no') ."\n";
