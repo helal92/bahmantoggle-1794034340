@@ -14,7 +14,7 @@ $bahmanTmpDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR);
 
 // Product mega-menu fragment: always cache 5 minutes (public catalog).
 if (isset($_GET['include']) && $_GET['include'] === 'product_menu') {
-	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_product_menu_fragment.html';
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_product_menu_fragment_v2.html';
 	$bahmanPageCacheTtl = 300;
 	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
 		header('Content-Type: text/html; charset=UTF-8');
@@ -26,7 +26,7 @@ if (isset($_GET['include']) && $_GET['include'] === 'product_menu') {
 }
 
 if ($bahmanFastMode && isset($_GET['include']) && $_GET['include'] === 'sales') {
-	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_sales_page.html';
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_sales_page_v2.html';
 	$bahmanPageCacheTtl = 90;
 	if (is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {
 		header('Content-Type: text/html; charset=UTF-8');
