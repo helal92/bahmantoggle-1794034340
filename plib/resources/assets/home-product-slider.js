@@ -131,9 +131,17 @@
     if (preload && preload.href) {
       src = preload.href.replace(/(\?.*)?$/, "") + "?home=" + Date.now();
     }
-    return import(src).catch(function () {
-      /* slider optional */
-    });
+    return import(src)
+      .then(function () {
+        if (typeof window.initBahmanProductSlider === "function") {
+          window.initBahmanProductSlider();
+        }
+      })
+      .catch(function () {
+        if (typeof window.initBahmanProductSlider === "function") {
+          window.initBahmanProductSlider();
+        }
+      });
   }
 
   function load() {
