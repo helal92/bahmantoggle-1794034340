@@ -27,7 +27,7 @@ if (isset($_GET['include']) && $_GET['include'] === 'product_menu') {
 
 // Homepage + sales HTML cache (FAST_MODE): skip session/CMS on HIT.
 if (isset($_GET['include']) && ($_GET['include'] === 'sales' || $_GET['include'] === 'index')) {
-	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_' . ($_GET['include'] === 'index' ? 'home' : 'sales') . '_page_v3.html';
+	$bahmanPageCacheFile = $bahmanTmpDir . '/bahman_' . ($_GET['include'] === 'index' ? 'home' : 'sales') . '_page_v4.html';
 	$bahmanPageCacheTtl = 90;
 	$allowPageCache = $bahmanFastMode || $_GET['include'] === 'index';
 	if ($allowPageCache && is_file($bahmanPageCacheFile) && (time() - (int) filemtime($bahmanPageCacheFile)) < $bahmanPageCacheTtl) {

@@ -96,7 +96,7 @@
 
             {* Product carousel: filled client-side from /product-menu.json (keeps homepage HTML light) *}
             <section class="slider_car container" id="home-product-slider"
-                data-menu-json="{$admin_setting.site_url}/product-menu.json"
+                data-menu-json="{$admin_setting.site_url}/product-menu-data"
                 data-file-url="{$admin_setting.file_url}"
                 data-site-url="{$admin_setting.site_url}"
                 hidden>
