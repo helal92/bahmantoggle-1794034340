@@ -12,13 +12,11 @@
   }
 
   var brandsEl = document.getElementById("home-product-brands");
-  var carouselsEl = document.getElementById("home-product-carousels");
-  if (!brandsEl || !carouselsEl) {
+  if (!brandsEl) {
     return;
   }
 
-  // First brand: all real src (Swiper loop clones need real images).
-  // Other brands: placeholder until tab click.
+  // First brand: real src for all slides (Swiper loop clones need real images).
   var EAGER_FIRST_BRAND = true;
 
   function esc(s) {
@@ -36,6 +34,31 @@
       img.setAttribute("src", src);
       img.removeAttribute("data-src");
     });
+  }
+
+  function clearCarousels() {
+    section.querySelectorAll(":scope > .carousel-wrap").forEach(function (el) {
+      el.remove();
+    });
+    var holder = document.getElementById("home-product-carousels");
+    if (holder) {
+      holder.innerHTML = "";
+    }
+  }
+
+  function insertCarousels(html) {
+    clearCarousels();
+    var info = section.querySelector(":scope > .info");
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    while (tmp.firstChild) {
+      // CSS expects .slider_car > .carousel-wrap (direct child), not nested in a holder.
+      if (info) {
+        section.insertBefore(tmp.firstChild, info);
+      } else {
+        section.appendChild(tmp.firstChild);
+      }
+    }
   }
 
   function build(categories) {
@@ -64,7 +87,7 @@
           var href = siteUrl + "/product/" + encodeURIComponent(car.id);
           var eager = isFirst && EAGER_FIRST_BRAND;
           var imgAttrs = eager
-            ? 'src="' + esc(img) + '" loading="' + (idx < 3 ? (idx === 0 ? "eager" : "lazy") : "lazy") + '"'
+            ? 'src="' + esc(img) + '" loading="' + (idx === 0 ? "eager" : "lazy") + '"'
             : 'src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" data-src="' +
               esc(img) +
               '" loading="lazy"';
@@ -103,69 +126,25 @@
       return false;
     }
     brandsEl.innerHTML = brandsHtml;
-    carouselsEl.innerHTML = carouselsHtml;
+    insertCarousels(carouselsHtml);
     section.hidden = false;
-    // Force layout so Swiper measures a real width (was ~0 while [hidden]).
     void section.offsetWidth;
 
     brandsEl.querySelectorAll("[tab_content_title]").forEach(function (tab) {
       tab.addEventListener("click", function () {
         var key = tab.getAttribute("tab_content_title");
-        var wrap = carouselsEl.querySelector('[tab_content_item="' + key + '"]');
+        var wrap = section.querySelector('[tab_content_item="' + key + '"]');
         hydrate(wrap);
-        requestAnimationFrame(function () {
-          repairSliders();
-        });
       });
     });
 
     return true;
   }
 
-  function repairSliders() {
-    document.querySelectorAll(".ProductCategory_Slider").forEach(function (el) {
-      var s = el.swiperInstance;
-      if (!s) {
-        return;
-      }
-      try {
-        s.updateSize();
-        s.updateSlides();
-        s.updateProgress();
-        s.update();
-        var wrap = el.closest(".carousel-wrap");
-        if (wrap && wrap.classList.contains("active")) {
-          var cw = el.getBoundingClientRect().width;
-          var active = el.querySelector(".swiper-slide-active");
-          var aw = active ? active.getBoundingClientRect().width : 0;
-          if (cw > 0 && aw > cw * 1.5) {
-            if (typeof s.loopDestroy === "function") {
-              s.loopDestroy();
-            }
-            s.params.loop = false;
-            s.update();
-            s.slideTo(0, 0);
-          } else if (s.params.loop && s.slideToLoop) {
-            s.slideToLoop(0, 0);
-          } else {
-            s.slideTo(0, 0);
-          }
-        }
-      } catch (err) {
-        /* ignore */
-      }
-    });
-  }
-
   function runInit() {
     if (typeof window.initBahmanProductSlider === "function") {
       window.initBahmanProductSlider();
     }
-    repairSliders();
-    requestAnimationFrame(function () {
-      repairSliders();
-      setTimeout(repairSliders, 80);
-    });
   }
 
   function bootSlider() {
@@ -200,7 +179,6 @@
         if (!build(cats)) {
           return;
         }
-        // Wait a frame after unhiding so Swiper gets non-zero container width.
         return new Promise(function (resolve) {
           requestAnimationFrame(function () {
             requestAnimationFrame(function () {
