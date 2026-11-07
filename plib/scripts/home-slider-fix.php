@@ -1,0 +1,22 @@
+<?php
+$fm='/usr/local/psa/admin/bin/filemng';
+$bh='/var/www/vhosts/bahman.ir/httpdocs';
+$bhUser=trim((string)shell_exec("stat -c '%U' ".escapeshellarg("$bh/index.php")));
+$res='/opt/psa/admin/plib/modules/bahmantoggle/resources';
+$from="$res/assets/home-product-slider.js";
+if (!is_file($from)) $from="$res/home-product-slider.js";
+$dst="$bh/templates/bahman/assets/home-product-slider.js";
+echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg($bhUser).' cp '.escapeshellarg($from).' '.escapeshellarg($dst).' 2>&1');
+echo "deployed bytes=".filesize($dst)." has_schedule=".(strpos(file_get_contents($dst),'scheduleLoad')!==false?'Y':'N')."\n";
+foreach (glob("$bh/templates_c/*")?:[] as $p) if(is_file($p)) @unlink($p);
+foreach (glob('/tmp/bahman_*')?:[] as $p) @unlink($p);
+file_put_contents('/tmp/_p.php','<?php foreach(glob(sys_get_temp_dir()."/bahman_*")?:[] as $p)@unlink($p); echo "purged\n";');
+echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg($bhUser).' cp '.escapeshellarg('/tmp/_p.php').' '.escapeshellarg("$bh/_p.php").' 2>&1');
+echo shell_exec('curl -sk --max-time 10 -H "Host: bahman.ir" "https://172.20.14.76/_p.php"');
+echo shell_exec(escapeshellcmd($fm).' '.escapeshellarg($bhUser).' rm '.escapeshellarg("$bh/_p.php").' 2>&1');
+$html=shell_exec("curl -sk --max-time 30 -H 'Host: bahman.ir' 'https://172.20.14.76/?nocache=".time()."'");
+echo "home_len=".strlen($html)."\n";
+if (preg_match('#home-product-slider\.js\?v=([^"\']+)#',$html,$m)) echo "js_ver=".$m[1]."\n";
+$js=shell_exec('curl -sk --max-time 15 -H "Host: bahman.ir" "https://172.20.14.76/templates/bahman/assets/home-product-slider.js?x='.time().'"');
+echo "live_js_schedule=".(strpos($js,'scheduleLoad')!==false?'Y':'N')." live_js_io=".(strpos($js,'IntersectionObserver')!==false?'Y':'N')."\n";
+echo "DONE\n";

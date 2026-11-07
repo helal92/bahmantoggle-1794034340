@@ -156,22 +156,24 @@
       });
   }
 
-  // Don't compete with CSS on first paint — wait until section is near viewport.
-  if ("IntersectionObserver" in window) {
-    var io = new IntersectionObserver(
-      function (entries) {
-        if (!entries.some(function (e) { return e.isIntersecting; })) return;
-        io.disconnect();
-        load();
-      },
-      { rootMargin: "200px 0px" }
-    );
-    io.observe(section);
-  } else if (document.readyState === "complete") {
-    setTimeout(load, 500);
+  // Section starts with [hidden], so IntersectionObserver never fires (0×0 box).
+  // Load shortly after first paint / idle instead.
+  function scheduleLoad() {
+    if (typeof window.requestIdleCallback === "function") {
+      window.requestIdleCallback(
+        function () {
+          load();
+        },
+        { timeout: 1200 }
+      );
+    } else {
+      setTimeout(load, 200);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleLoad);
   } else {
-    window.addEventListener("load", function () {
-      setTimeout(load, 500);
-    });
+    scheduleLoad();
   }
 })();
