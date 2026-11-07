@@ -37,7 +37,7 @@
 
         {if !empty($sales_page)}
             <section class="hero-selas">
-                <img src="{$admin_setting.file_url}/thumb/{$sales_page.values.banner}/1920" class="img" alt="{$sales_page.values.title}" width="1920" height="480" decoding="async" fetchpriority="high">
+                <img src="/sales-img/{$sales_page.values.banner}_1920.jpg" class="img" alt="{$sales_page.values.title}" width="1920" height="480" decoding="async" fetchpriority="high">
                 <div class="text-box">
                     <p class="title container">صفحه فروش</p>
                 </div>
@@ -98,7 +98,7 @@
                                             <div class="swiper-slide">
                                                 <div class="Item">
                                                     <img class="image"
-                                                        src="{$admin_setting.file_url}/thumb/{$pro.values.image}/600"
+                                                        src="/sales-img/{$pro.values.image}_600.png"
                                                         alt="{$pro.values.title|default: ''}"
                                                         width="600"
                                                         height="400"
