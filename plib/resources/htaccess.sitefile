@@ -7,6 +7,10 @@ IndexIgnore *
     Require all granted
 </Files>
 
+# Allow CORS preflight for cross-origin <video> Range requests from bahman.ir
+RewriteCond %{REQUEST_METHOD} OPTIONS
+RewriteRule ^ - [R=204,L]
+
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType image/jpeg "access plus 1 year"
@@ -24,8 +28,9 @@ IndexIgnore *
     Header always append X-Frame-Options SAMEORIGIN
     Header set X-Content-Type-Options nosniff
     Header always set Access-Control-Allow-Origin "*"
-    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
-    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
+    Header always set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Range, If-Range, If-None-Match, If-Modified-Since"
+    Header always set Access-Control-Expose-Headers "Accept-Ranges, Content-Range, Content-Length, Content-Type, ETag, Last-Modified"
     Header always unset Set-Cookie
 </IfModule>
 
@@ -41,7 +46,6 @@ RewriteCond %{REQUEST_URI} !^/v/ [NC]
 RewriteCond %{DOCUMENT_ROOT}/v/$1.webm -f
 RewriteRule ^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})(?:\.webm)?$ /v/$1.webm [L]
 
-# Existing static files (including /v/*) are served directly
 RewriteCond %{REQUEST_URI} !^/assets/ [NC]
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
