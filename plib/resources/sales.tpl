@@ -37,7 +37,7 @@
 
         {if !empty($sales_page)}
             <section class="hero-selas">
-                <img src="/sales-img/{$sales_page.values.banner}_1920.jpg" class="img" alt="{$sales_page.values.title}" width="1920" height="480" decoding="async" fetchpriority="high">
+                <img src="/sales-img/{$sales_page.values.banner}_1920.jpg" class="img" alt="{$sales_page.values.title}" width="1920" height="480" decoding="async" fetchpriority="high" onerror="this.onerror=null;this.src='{$admin_setting.file_url}/thumb/{$sales_page.values.banner}/1920';">
                 <div class="text-box">
                     <p class="title container">صفحه فروش</p>
                 </div>
@@ -104,6 +104,7 @@
                                                         height="400"
                                                         loading="lazy"
                                                         decoding="async"
+                                                        onerror="this.onerror=null;this.src='{$admin_setting.file_url}/thumb/{$pro.values.image}/600';"
                                                         data-title="{$pro.values.title|default: ''|escape:'html'}"
                                                         data-desc="{$pro.values.desc|default: ''|escape:'html'}"
                                                         {if isset($pro.values.attachemnt) and $pro.values.attachemnt neq ''}data-show-link="{$admin_setting.file_url}/{$pro.values.attachemnt}"{/if}
