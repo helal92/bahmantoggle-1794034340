@@ -134,6 +134,6 @@ echo "gen_type=".sh('file -b /tmp/_gen_test.png 2>/dev/null')."\n";
 if (is_file($testPath.'.baktest') && !is_file($testPath)) {
   @rename($testPath.'.baktest', $testPath);
 }
-@page = sh('curl -s --max-time 25 -H "Host: bahman.ir" -H "User-Agent: Mozilla/5.0" http://172.20.14.76/sales');
+$page = sh('curl -s --max-time 25 -H "Host: bahman.ir" -H "User-Agent: Mozilla/5.0" http://172.20.14.76/sales');
 echo "page_onerror=".(strpos($page,'onerror=')!==false?'1':'0')."\n";
 echo "DONE\n";
