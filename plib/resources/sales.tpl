@@ -132,7 +132,7 @@
                         <div class="box_btn">
                             <a id="product_slider_product_link" class="Link2" href="#" style="display: none;">صفحه محصول</a>
                             <a id="product_slider_link" class="Link2" href="#" style="display: none;">مشاهده بخشنامه</a>
-                            <a id="product_slider_link2" class="Link2" href="#" target="_blank" style="display: none;">خرید خودرو</a>
+                            <a id="product_slider_link2" class="Link2" href="#" target="_blank" style="display: none;">سامانه فروش</a>
                         </div>
                     </div>
                 {/if}
