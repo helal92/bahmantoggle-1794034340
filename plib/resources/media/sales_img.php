@@ -1,8 +1,10 @@
 <?php
 /**
- * On-demand builder for /sales-img/{uuid}_{w}.{ext}
- * If the static cache file is missing, fetch from sitefile, resize, save, then serve.
- * Wired by .htaccess only when the file does not already exist.
+ * On-demand /sales-img/{uuid}_{w}.{ext}
+ *
+ * If the static file exists → serve it.
+ * If missing → immediately redirect to sitefile thumb (fast UX),
+ * then best-effort cache a local copy for next requests.
  */
 
 $uuid = isset($_GET['uuid']) ? trim((string) $_GET['uuid']) : '';
@@ -20,16 +22,32 @@ $root = dirname(__DIR__);
 $dir = $root . '/sales-img';
 $dest = $dir . '/' . $uuid . '_' . $w . '.' . $ext;
 $destPng = $dir . '/' . $uuid . '_' . $w . '.png';
+$thumbUrl = 'https://sitefile.bahman.ir/thumb/' . rawurlencode($uuid) . '/' . $w;
+$rawUrl = 'https://sitefile.bahman.ir/' . rawurlencode($uuid);
 
 if (is_file($dest) && filesize($dest) > 500) {
     serve_file($dest, $ext);
 }
 
 if ($ext === 'jpg' && is_file($destPng) && filesize($destPng) > 500) {
-    // Prefer converting existing png cache to jpg once.
     if (convert_and_save($destPng, $dest, $w, $ext)) {
         serve_file($dest, $ext);
     }
+}
+
+// Fast path: never make the browser wait on a slow/failing build.
+// Cache locally in the background of this request after sending redirect.
+if (!headers_sent()) {
+    header('Cache-Control: no-store');
+    header('X-Sales-Img: redirect');
+    header('Location: ' . $thumbUrl, true, 302);
+}
+
+// Attempt a quick local cache for subsequent hits (ignore failures).
+ignore_user_abort(true);
+@http_response_code(302);
+if (function_exists('fastcgi_finish_request')) {
+    @fastcgi_finish_request();
 }
 
 if (!is_dir($dir)) {
@@ -39,47 +57,22 @@ if (!is_dir($dir)) {
 $tmp = sys_get_temp_dir() . '/sales_img_' . $uuid . '_' . $w . '_' . getmypid() . '.bin';
 @unlink($tmp);
 
-$sources = [
-    'https://sitefile.bahman.ir/thumb/' . rawurlencode($uuid) . '/' . $w,
-    'https://sitefile.bahman.ir/' . rawurlencode($uuid),
-];
-
-$raw = null;
-foreach ($sources as $url) {
-    $raw = fetch_url($url);
-    if ($raw !== null && looks_like_image($raw)) {
-        break;
-    }
-    $raw = null;
+$raw = fetch_url($thumbUrl, 8);
+if ($raw === null || !looks_like_image($raw)) {
+    $raw = fetch_url($rawUrl, 8);
 }
-
-if ($raw === null) {
-    http_response_code(404);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'Not found';
-    exit;
-}
-
-file_put_contents($tmp, $raw);
-$ok = convert_and_save($tmp, $dest, $w, $ext);
-@unlink($tmp);
-
-if (!$ok || !is_file($dest) || filesize($dest) < 500) {
-    // Last resort: store original bytes with requested name.
-    if ($raw !== null && looks_like_image($raw)) {
+if ($raw !== null && looks_like_image($raw)) {
+    @file_put_contents($tmp, $raw);
+    $ok = convert_and_save($tmp, $dest, $w, $ext);
+    @unlink($tmp);
+    if ((!$ok || !is_file($dest) || filesize($dest) < 500) && looks_like_image($raw)) {
         @file_put_contents($dest, $raw);
     }
+    if (is_file($dest)) {
+        @chmod($dest, 0644);
+    }
 }
-
-if (!is_file($dest) || filesize($dest) < 500) {
-    http_response_code(404);
-    header('Content-Type: text/plain; charset=UTF-8');
-    echo 'Not found';
-    exit;
-}
-
-@chmod($dest, 0644);
-serve_file($dest, $ext);
+exit;
 
 function serve_file(string $path, string $ext): void
 {
@@ -92,18 +85,18 @@ function serve_file(string $path, string $ext): void
     exit;
 }
 
-function fetch_url(string $url): ?string
+function fetch_url(string $url, int $timeout = 8): ?string
 {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => 40,
+            CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
+            CURLOPT_TIMEOUT => $timeout,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => 0,
-            CURLOPT_USERAGENT => 'bahman-sales-img/1.0',
+            CURLOPT_USERAGENT => 'bahman-sales-img/1.1',
             CURLOPT_HTTPHEADER => ['Accept: image/*,*/*'],
         ]);
         $body = curl_exec($ch);
@@ -117,9 +110,9 @@ function fetch_url(string $url): ?string
 
     $ctx = stream_context_create([
         'http' => [
-            'timeout' => 40,
+            'timeout' => $timeout,
             'follow_location' => 1,
-            'header' => "Accept: image/*\r\nUser-Agent: bahman-sales-img/1.0\r\n",
+            'header' => "Accept: image/*\r\nUser-Agent: bahman-sales-img/1.1\r\n",
         ],
         'ssl' => [
             'verify_peer' => false,
@@ -144,7 +137,6 @@ function looks_like_image(string $bin): bool
     if (strncmp($bin, 'RIFF', 4) === 0 && substr($bin, 8, 4) === 'WEBP') {
         return true;
     }
-    // Some gateways mislabel content-type; reject obvious HTML.
     $head = ltrim(substr($bin, 0, 200));
     if (stripos($head, '<!doctype') === 0 || stripos($head, '<html') === 0) {
         return false;
